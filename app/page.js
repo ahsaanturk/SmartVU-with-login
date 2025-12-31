@@ -1,4 +1,4 @@
-```javascript
+
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 
@@ -13,6 +13,5 @@ export default async function Home() {
   }
 
   // content becomes unreachable but keeping structure valid if we ever want a landing page
-  return null; 
+  return null;
 }
-```

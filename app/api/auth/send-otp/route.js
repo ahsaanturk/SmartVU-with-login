@@ -9,6 +9,11 @@ export async function POST(req) {
         const { email, name } = await req.json();
         await dbConnect();
 
+        // 1. Validate Domain
+        if (!email.endsWith('@vu.edu.pk')) {
+            return NextResponse.json({ error: 'Only official @vu.edu.pk emails are allowed' }, { status: 400 });
+        }
+
         // Generate 6 digit OTP
         const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
         const expires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes

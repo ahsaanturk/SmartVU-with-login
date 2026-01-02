@@ -44,23 +44,3 @@ export async function GET(req, { params }) {
         return NextResponse.json({ error: 'Failed to fetch course details' }, { status: 500 });
     }
 }
-
-export async function DELETE(req, { params }) {
-    try {
-        await dbConnect();
-        const { id } = await params;
-
-        // Cascade delete modules/lessons
-        await Course.findByIdAndDelete(id);
-
-        const modules = await Module.find({ courseId: id });
-        const moduleIds = modules.map(m => m._id);
-
-        await Module.deleteMany({ courseId: id });
-        await Lesson.deleteMany({ moduleId: { $in: moduleIds } });
-
-        return NextResponse.json({ success: true });
-    } catch (error) {
-        return NextResponse.json({ error: 'Delete failed' }, { status: 500 });
-    }
-}

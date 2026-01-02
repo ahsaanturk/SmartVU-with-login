@@ -9,6 +9,7 @@ export default function ManageCourses() {
     const [courses, setCourses] = useState([]);
     const [loading, setLoading] = useState(true);
     const [showForm, setShowForm] = useState(false);
+    const [editingId, setEditingId] = useState(null); // Track which course is being edited
     const router = useRouter();
 
     // Form State
@@ -35,20 +36,37 @@ export default function ManageCourses() {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        const res = await fetch('/api/admin/courses', {
-            method: 'POST',
+
+        const url = editingId ? `/api/admin/courses/${editingId}` : '/api/admin/courses';
+        const method = editingId ? 'PUT' : 'POST';
+
+        const res = await fetch(url, {
+            method: method,
             body: JSON.stringify(formData),
             headers: { 'Content-Type': 'application/json' }
         });
 
         if (res.ok) {
             setShowForm(false);
+            setEditingId(null); // Reset edit mode
             setFormData({ name: '', code: '', allowedPrograms: ['BSCS'], semester: 1, description: '' });
             fetchCourses();
         } else {
             const errorData = await res.json();
-            alert(`Error: ${errorData.error || 'Failed to create course'}`);
+            alert(`Error: ${errorData.error || 'Failed to save course'}`);
         }
+    };
+
+    const handleEdit = (course) => {
+        setEditingId(course._id);
+        setFormData({
+            name: course.name,
+            code: course.code,
+            allowedPrograms: course.allowedPrograms || [],
+            semester: course.semester,
+            description: course.description || ''
+        });
+        setShowForm(true);
     };
 
     if (loading) return <div className="page-container">Loading...</div>;
@@ -63,7 +81,11 @@ export default function ManageCourses() {
                 <button
                     className="btn btn-primary"
                     style={{ width: 'auto' }}
-                    onClick={() => setShowForm(!showForm)}
+                    onClick={() => {
+                        setShowForm(!showForm);
+                        setEditingId(null);
+                        setFormData({ name: '', code: '', allowedPrograms: ['BSCS'], semester: 1, description: '' });
+                    }}
                 >
                     {showForm ? 'CANCEL' : '+ NEW COURSE'}
                 </button>
@@ -71,7 +93,7 @@ export default function ManageCourses() {
 
             {showForm && (
                 <div className="stat-card" style={{ marginBottom: '32px', border: '2px solid #e5e5e5' }}>
-                    <h3 style={{ marginBottom: '16px' }}>Create New Course</h3>
+                    <h3 style={{ marginBottom: '16px' }}>{editingId ? 'Edit Course' : 'Create New Course'}</h3>
                     <form onSubmit={handleSubmit} style={{ display: 'grid', gap: '16px', gridTemplateColumns: '1fr 1fr' }}>
                         <div className="input-group">
                             <label>Course Name</label>
@@ -136,7 +158,7 @@ export default function ManageCourses() {
                             />
                         </div>
                         <button type="submit" className="btn btn-primary" style={{ gridColumn: '1 / -1' }}>
-                            CREATE COURSE
+                            {editingId ? 'UPDATE COURSE' : 'CREATE COURSE'}
                         </button>
                     </form>
                 </div>
@@ -161,10 +183,20 @@ export default function ManageCourses() {
                         <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
                             <Link href={`/admin/courses/${course._id}`} style={{ fontSize: '1.5rem', color: '#e5e5e5', textDecoration: 'none' }}>➔</Link>
                             <button
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleEdit(course);
+                                }}
+                                style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.2rem', marginRight: '8px' }}
+                                title="Edit Course"
+                            >
+                                ✏️
+                            </button>
+                            <button
                                 onClick={async (e) => {
                                     e.stopPropagation();
                                     if (!confirm('Delete this course?')) return;
-                                    const res = await fetch(`/api/courses/${course._id}`, { method: 'DELETE' });
+                                    const res = await fetch(`/api/admin/courses/${course._id}`, { method: 'DELETE' });
                                     if (res.ok) setCourses(courses.filter(c => c._id !== course._id));
                                 }}
                                 style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.2rem' }}

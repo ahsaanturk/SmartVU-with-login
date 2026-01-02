@@ -89,6 +89,10 @@ const UserSchema = new mongoose.Schema({
     lastStudyDate: {
         type: Date,
     },
+    xp: {
+        type: Number,
+        default: 0
+    }
 }, { timestamps: true });
 
 export default mongoose.models.User || mongoose.model('User', UserSchema);

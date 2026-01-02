@@ -10,6 +10,7 @@ export default function ManageCourses() {
     const [loading, setLoading] = useState(true);
     const [showForm, setShowForm] = useState(false);
     const [editingId, setEditingId] = useState(null); // Track which course is being edited
+    const [searchQuery, setSearchQuery] = useState('');
     const router = useRouter();
 
     // Form State
@@ -91,6 +92,17 @@ export default function ManageCourses() {
                 </button>
             </div>
 
+            {/* Search Bar */}
+            <div style={{ marginBottom: '24px' }}>
+                <input
+                    className="input-field"
+                    placeholder="Search courses by Code (e.g. CS101) or Name..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    style={{ padding: '12px', fontSize: '1rem' }}
+                />
+            </div>
+
             {showForm && (
                 <div className="stat-card" style={{ marginBottom: '32px', border: '2px solid #e5e5e5' }}>
                     <h3 style={{ marginBottom: '16px' }}>{editingId ? 'Edit Course' : 'Create New Course'}</h3>
@@ -165,7 +177,10 @@ export default function ManageCourses() {
             )}
 
             <div style={{ display: 'grid', gap: '16px' }}>
-                {courses.map(course => (
+                {courses.filter(course =>
+                    course.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                    course.code.toLowerCase().includes(searchQuery.toLowerCase())
+                ).map(course => (
                     <div
                         key={course._id}
                         className="stat-card"

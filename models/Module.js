@@ -17,6 +17,13 @@ const ModuleSchema = new mongoose.Schema({
     order: {
         type: Number,
         default: 0,
+    },
+    unitQuiz: {
+        questions: [{
+            question: String,
+            options: [String],
+            correctAnswer: Number
+        }]
     }
 }, { timestamps: true });
 

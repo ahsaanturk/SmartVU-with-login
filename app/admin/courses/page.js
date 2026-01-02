@@ -15,7 +15,7 @@ export default function ManageCourses() {
     const [formData, setFormData] = useState({
         name: '',
         code: '',
-        degree: ['BSCS'],
+        allowedPrograms: ['BSCS'],
         semester: 1,
         description: ''
     });
@@ -35,7 +35,7 @@ export default function ManageCourses() {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        const res = await fetch('/api/courses', {
+        const res = await fetch('/api/admin/courses', {
             method: 'POST',
             body: JSON.stringify(formData),
             headers: { 'Content-Type': 'application/json' }
@@ -43,10 +43,11 @@ export default function ManageCourses() {
 
         if (res.ok) {
             setShowForm(false);
-            setFormData({ name: '', code: '', degree: ['BSCS'], semester: 1, description: '' });
+            setFormData({ name: '', code: '', allowedPrograms: ['BSCS'], semester: 1, description: '' });
             fetchCourses();
         } else {
-            alert('Error creating course');
+            const errorData = await res.json();
+            alert(`Error: ${errorData.error || 'Failed to create course'}`);
         }
     };
 
@@ -93,23 +94,23 @@ export default function ManageCourses() {
                             />
                         </div>
                         <div className="input-group">
-                            <label style={{ display: 'block', marginBottom: '8px' }}>Degree Programs</label>
+                            <label style={{ display: 'block', marginBottom: '8px' }}>Allowed Programs</label>
                             <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
-                                {['BSCS', 'BSIT', 'BSSE'].map(deg => (
-                                    <label key={deg} style={{ display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer', background: '#f7f7f7', padding: '8px 12px', borderRadius: '8px', border: '1px solid #e5e5e5' }}>
+                                {['BSCS', 'BSIT', 'BSSE'].map(prog => (
+                                    <label key={prog} style={{ display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer', background: '#f7f7f7', padding: '8px 12px', borderRadius: '8px', border: '1px solid #e5e5e5' }}>
                                         <input
                                             type="checkbox"
-                                            checked={formData.degree.includes(deg)}
+                                            checked={formData.allowedPrograms.includes(prog)}
                                             onChange={(e) => {
                                                 if (e.target.checked) {
-                                                    setFormData({ ...formData, degree: [...formData.degree, deg] });
+                                                    setFormData({ ...formData, allowedPrograms: [...formData.allowedPrograms, prog] });
                                                 } else {
-                                                    setFormData({ ...formData, degree: formData.degree.filter(d => d !== deg) });
+                                                    setFormData({ ...formData, allowedPrograms: formData.allowedPrograms.filter(p => p !== prog) });
                                                 }
                                             }}
                                             style={{ accentColor: '#58cc02', width: '16px', height: '16px' }}
                                         />
-                                        <span style={{ fontWeight: '700', fontSize: '0.9rem' }}>{deg}</span>
+                                        <span style={{ fontWeight: '700', fontSize: '0.9rem' }}>{prog}</span>
                                     </label>
                                 ))}
                             </div>
@@ -153,7 +154,7 @@ export default function ManageCourses() {
                                 <span style={{ fontWeight: '800', color: 'var(--primary)', marginRight: '12px' }}>{course.code}</span>
                                 <span style={{ fontWeight: '700' }}>{course.name}</span>
                                 <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginTop: '4px' }}>
-                                    {(Array.isArray(course.degree) ? course.degree.join(', ') : course.degree)} • Semester {course.semester}
+                                    {(Array.isArray(course.allowedPrograms) ? course.allowedPrograms.join(', ') : course.allowedPrograms || JSON.stringify(course.allowedPrograms))} • Semester {course.semester}
                                 </p>
                             </div>
                         </Link>

@@ -1,0 +1,10 @@
+DEBUG: Found 9 TOTAL courses in DB.
+- "Introduction to Computing" | Code: "CS101" | Sem: 1 | Programs: [] | Status: active
+- "English Comprehension" | Code: "ENG101" | Sem: 1 | Programs: [] | Status: active
+- "Calculus and Analytical Geometry" | Code: "MTH101" | Sem: 1 | Programs: [] | Status: active
+- "Discrete Mathematics" | Code: "MTH202" | Sem: 1 | Programs: [] | Status: active
+- "Pakistan Studies" | Code: "PAK301" | Sem: 1 | Programs: [] | Status: active
+- "Introduction to e-Learning" | Code: "VU001" | Sem: 1 | Programs: [] | Status: active
+- "Islamic Studies" | Code: "ISL202" | Sem: 1 | Programs: [] | Status: active
+- "Introduction to Programming" | Code: "CS201" | Sem: 1 | Programs: [] | Status: active
+- "Introduction to Programming" | Code: "CS201p" | Sem: 1 | Programs: [] | Status: active

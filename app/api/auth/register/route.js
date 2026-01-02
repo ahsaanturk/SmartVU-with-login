@@ -4,11 +4,20 @@ import dbConnect from '@/lib/db';
 import User from '@/models/User';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+import { syncStudentGroups } from '@/lib/services/groupService';
 import { cookies } from 'next/headers';
 
 export async function POST(req) {
     try {
-        const { email, password } = await req.json();
+        const {
+            name,
+            email,
+            password,
+            university,
+            degreeLevel,
+            degree,
+            semester
+        } = await req.json();
         await dbConnect();
 
         const user = await User.findOne({ email });
@@ -25,8 +34,18 @@ export async function POST(req) {
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(password, salt);
 
+        user.name = name; // Update name just in case
         user.password = hashedPassword;
+        user.university = university;
+        user.degreeLevel = degreeLevel;
+        user.degree = degree;
+        user.semester = semester;
+
         await user.save();
+
+        // 4. Sync Course Groups (New Architecture)
+        // Automatically add student to relevant CourseGroups based on Degree/Semester
+        await syncStudentGroups(user._id);
 
         // Create Session
         const token = jwt.sign({ userId: user._id, email: user.email }, process.env.JWT_SECRET, { expiresIn: '7d' });

@@ -4,8 +4,12 @@ import mongoose from 'mongoose';
 const ContentSchema = new mongoose.Schema({
     type: {
         type: String,
-        enum: ['Concept', 'Quote', 'Lecture'],
+        enum: ['Concept', 'Quote', 'Lecture', 'Handout', 'Quiz'],
         required: true,
+    },
+    university: {
+        type: String,
+        default: 'Virtual University',
     },
     title: {
         type: String, // e.g. "OOP Polymorphism" or "Quote"
@@ -14,8 +18,16 @@ const ContentSchema = new mongoose.Schema({
         type: String, // The actual concept text or quote text
     },
     content: {
-        type: String, // URL for Lecture, or extended text
+        type: String, // Extended text
     },
+    resourceLink: {
+        type: String, // URL for Lecture Video or Handout PDF
+    },
+    questions: [{
+        question: String,
+        options: [String],
+        correctAnswer: Number // Index
+    }],
     author: {
         type: String, // For quotes
     },

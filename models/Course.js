@@ -15,9 +15,34 @@ const CourseSchema = new mongoose.Schema({
         type: Number,
         required: true,
     },
-    degree: {
-        type: String,
+    creditHours: {
+        type: Number,
         required: true,
+        default: 3,
+    },
+    allowedPrograms: [{
+        type: String, // Legacy Support
+        required: true
+    }],
+    allowedProgramIds: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Program'
+    }],
+    activeSemesterId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Semester'
+    },
+    description: {
+        type: String,
+    },
+    status: {
+        type: String,
+        enum: ['active', 'archived'],
+        default: 'active',
+    },
+    createdBy: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
     },
 }, { timestamps: true });
 

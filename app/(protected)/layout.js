@@ -8,11 +8,11 @@ export default function DashboardLayout({ children }) {
     const pathname = usePathname();
 
     const navItems = [
-        { name: 'Home', path: '/dashboard', icon: '🏠' },
-        { name: 'Progress', path: '/dashboard/progress', icon: '📈' },
-        { name: 'Learning', path: '/dashboard/learning', icon: '🎓' },
-        { name: 'Alerts', path: '/dashboard/alerts', icon: '🔔' },
-        { name: 'Me', path: '/dashboard/me', icon: '👤' },
+        { name: 'Home', path: '/', icon: '🏠' },
+        { name: 'Progress', path: '/progress', icon: '📈' },
+        { name: 'Learning', path: '/learning', icon: '🎓' },
+        { name: 'Alerts', path: '/alerts', icon: '🔔' },
+        { name: 'Me', path: '/me', icon: '👤' },
     ];
 
     return (
@@ -22,8 +22,13 @@ export default function DashboardLayout({ children }) {
                 <nav style={{ flex: 1 }}>
                     {navItems.map((item) => {
                         const isActive = pathname === item.path;
+                        const isMain = item.name === 'Learning';
                         return (
-                            <Link key={item.path} href={item.path} className={`nav-item ${isActive ? 'active' : ''}`}>
+                            <Link
+                                key={item.path}
+                                href={item.path}
+                                className={`nav-item ${isActive ? 'active' : ''} ${isMain ? 'nav-item-floating' : ''}`}
+                            >
                                 <span style={{ marginRight: '12px', fontSize: '1.2rem' }}>{item.icon}</span>
                                 <span>{item.name}</span>
                             </Link>

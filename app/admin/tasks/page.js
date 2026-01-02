@@ -1,0 +1,182 @@
+
+'use client';
+
+import { useState, useEffect } from 'react';
+import Link from 'next/link';
+
+export default function CreateTask() {
+    const [formData, setFormData] = useState({
+        title: '',
+        courseCode: '',
+        type: 'Quiz',
+        dueDate: '',
+        description: ''
+    });
+    const [loading, setLoading] = useState(false);
+    const [tasks, setTasks] = useState([]);
+    const [availableCourses, setAvailableCourses] = useState([]);
+
+    useEffect(() => {
+        fetchTasks();
+        fetchCourses();
+    }, []);
+
+    const fetchTasks = () => {
+        // Fetch all pending status by default implies "active" alerts on admin side usually
+        // But let's fetch 'Pending' status tasks for list
+        fetch('/api/tasks?status=Pending')
+            .then(res => res.json())
+            .then(data => setTasks(data.tasks || []));
+    };
+
+    const fetchCourses = () => {
+        fetch('/api/courses')
+            .then(res => res.json())
+            .then(data => setAvailableCourses(data.courses || []));
+    };
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        if (!formData.courseCode) {
+            alert('Please select a course');
+            return;
+        }
+        setLoading(true);
+
+        try {
+            const res = await fetch('/api/tasks', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(formData)
+            });
+
+            if (res.ok) {
+                alert('Alert/Task Created!');
+                setFormData({ title: '', courseCode: '', type: 'Quiz', dueDate: '', description: '' });
+                fetchTasks();
+            } else {
+                alert('Failed to create task');
+            }
+        } catch (error) {
+            alert('Error');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleDelete = async (id) => {
+        if (!confirm('Delete this task?')) return;
+        const res = await fetch(`/api/tasks/${id}`, { method: 'DELETE' });
+        if (res.ok) {
+            setTasks(tasks.filter(t => t._id !== id));
+        }
+    };
+
+    return (
+        <div className="page-container">
+            <div style={{ maxWidth: '600px', width: '100%', margin: '0 auto' }}>
+                <Link href="/admin" style={{ color: 'var(--text-muted)', fontWeight: '700', marginBottom: '16px', display: 'inline-block' }}>
+                    ← BACK TO DASHBOARD
+                </Link>
+
+                <h1 className="title" style={{ textAlign: 'left' }}>Alerts & Tasks</h1>
+                <p className="subtitle" style={{ textAlign: 'left' }}>Notify students about upcoming deadlines.</p>
+
+                <div className="stat-card" style={{ marginBottom: '40px' }}>
+                    <h3 style={{ marginBottom: '16px' }}>Create New Alert</h3>
+                    <form onSubmit={handleSubmit} style={{ display: 'grid', gap: '16px' }}>
+                        <div className="input-group">
+                            <label>Title</label>
+                            <input
+                                className="input-field"
+                                placeholder="e.g. Quiz #1"
+                                value={formData.title}
+                                onChange={e => setFormData({ ...formData, title: e.target.value })}
+                                required
+                            />
+                        </div>
+
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                            <div className="input-group">
+                                <label>Course</label>
+                                <select
+                                    className="input-field"
+                                    value={formData.courseCode}
+                                    onChange={e => setFormData({ ...formData, courseCode: e.target.value })}
+                                    required
+                                >
+                                    <option value="">Select Course...</option>
+                                    {availableCourses.map(c => (
+                                        <option key={c._id} value={c.code}>{c.code}</option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div className="input-group">
+                                <label>Type</label>
+                                <select
+                                    className="input-field"
+                                    value={formData.type}
+                                    onChange={e => setFormData({ ...formData, type: e.target.value })}
+                                >
+                                    <option value="Quiz">Quiz</option>
+                                    <option value="Assignment">Assignment</option>
+                                    <option value="GDB">GDB</option>
+                                    <option value="Announcement">Announcement</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div className="input-group">
+                            <label>Due Date</label>
+                            <input
+                                type="date"
+                                className="input-field"
+                                value={formData.dueDate}
+                                onChange={e => setFormData({ ...formData, dueDate: e.target.value })}
+                                required
+                            />
+                        </div>
+
+                        <div className="input-group">
+                            <label>Description (Optional)</label>
+                            <textarea
+                                className="input-field"
+                                placeholder="Details..."
+                                value={formData.description}
+                                onChange={e => setFormData({ ...formData, description: e.target.value })}
+                            />
+                        </div>
+
+                        <button type="submit" className="btn btn-primary" disabled={loading}>
+                            {loading ? 'POSTING...' : 'POST ALERT'}
+                        </button>
+                    </form>
+                </div>
+
+                <h3 style={{ marginBottom: '16px' }}>Recent Alerts</h3>
+                <div style={{ display: 'grid', gap: '16px' }}>
+                    {tasks.map(task => (
+                        <div key={task._id} className="stat-card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px' }}>
+                            <div>
+                                <div style={{ display: 'flex', gap: '8px', marginBottom: '4px' }}>
+                                    <span style={{ background: '#e5e5e5', padding: '2px 8px', borderRadius: '4px', fontSize: '0.8rem', fontWeight: 'bold' }}>{task.courseCode}</span>
+                                    <span style={{ background: '#fff4db', color: '#ffa500', padding: '2px 8px', borderRadius: '4px', fontSize: '0.8rem', fontWeight: 'bold' }}>{task.type}</span>
+                                </div>
+                                <div style={{ fontWeight: '700' }}>{task.title}</div>
+                                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Due: {new Date(task.dueDate).toLocaleDateString()}</div>
+                            </div>
+                            <button
+                                onClick={() => handleDelete(task._id)}
+                                style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.2rem' }}
+                                title="Delete Task"
+                            >
+                                🗑️
+                            </button>
+                        </div>
+                    ))}
+                    {tasks.length === 0 && <p style={{ color: 'var(--text-muted)' }}>No recent alerts found.</p>}
+                </div>
+            </div>
+        </div>
+    );
+}

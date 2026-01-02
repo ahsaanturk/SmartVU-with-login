@@ -318,6 +318,31 @@ a {
   .nav-item.active {
     background: transparent;
     border: none;
+    color: var(--primary);
+  }
+
+  /* Central Floating Button (Learning) */
+  .nav-item-floating {
+    background-color: var(--primary);
+    color: white !important;
+    border-radius: 50%;
+    width: 60px;
+    height: 60px;
+    margin-top: -30px;
+    /* Push it up */
+    justify-content: center;
+    box-shadow: 0 4px 10px rgba(88, 204, 2, 0.4);
+    border: 4px solid white;
+    /* Cutout effect */
+  }
+
+  .nav-item-floating span {
+    margin: 0 !important;
+  }
+
+  /* Hide text label for the floating button to keep it clean, or keep it if desired */
+  .nav-item-floating span:last-child {
+    display: none;
   }
 }
 
@@ -364,5 +389,85 @@ a {
 
   100% {
     box-shadow: 0 0 0 0 rgba(255, 150, 0, 0);
+  }
+}
+
+.btn-outline {
+  background-color: transparent;
+  border: 2px solid #e5e5e5;
+  color: var(--text-muted);
+  box-shadow: 0 4px 0 #e5e5e5;
+}
+
+.btn-outline:active {
+  box-shadow: none;
+  transform: translateY(4px);
+}
+
+.hover-bounce {
+  transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.hover-bounce:hover {
+  transform: scale(1.1) rotate(5deg);
+}
+
+/* Duolingo-style Path Connector */
+.path-connector {
+  width: 2px;
+  background: #e5e5e5;
+  position: absolute;
+  z-index: -1;
+}
+
+/* Glassmorphism Utilities */
+.glass-panel {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.07);
+}
+
+/* Responsive Sidebar Drawer */
+@media (max-width: 768px) {
+  .sidebar-drawer {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100vh;
+    width: 280px;
+    background: white;
+    z-index: 100;
+    transform: translateX(-100%);
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 4px 0 24px rgba(0, 0, 0, 0.1);
+  }
+
+  .sidebar-drawer.open {
+    transform: translateX(0);
+  }
+
+  .sidebar-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.4);
+    z-index: 90;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s;
+  }
+
+  .sidebar-overlay.open {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  /* Hide default sidebar on mobile if we use drawer */
+  .sidebar {
+    display: none !important;
   }
 }

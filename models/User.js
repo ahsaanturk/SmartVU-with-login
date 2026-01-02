@@ -33,18 +33,51 @@ const UserSchema = new mongoose.Schema({
         type: Boolean,
         default: false,
     },
+    role: {
+        type: String,
+        enum: ['student', 'admin'],
+        default: 'student',
+    },
     // Student MVP Fields
+    university: {
+        type: String,
+        default: 'Virtual University',
+    },
+    degreeLevel: {
+        type: String,
+        default: 'BS',
+    },
     degree: {
         type: String,
-        default: 'BSCS', // Can be updated in Settings
+        enum: ['BSCS', 'BSIT', 'BSSE'],
+        default: 'BSCS',
     },
     semester: {
         type: Number,
+        min: 1,
+        max: 8,
         default: 1,
     },
     selectedCourses: [{
-        type: String, // Storing Course Codes or IDs
+        type: String, // Legacy Storing Course Codes
     }],
+    // New Architecture Fields
+    programId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Program',
+    },
+    enrolledSemesterId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Semester',
+    },
+    selectedCourseIds: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Course',
+    }],
+    currentSemesterLevel: {
+        type: Number,
+        default: 1,
+    },
     plannedStudyTime: {
         type: Number,
         default: 120, // Minutes per day

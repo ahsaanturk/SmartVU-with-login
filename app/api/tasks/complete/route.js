@@ -26,27 +26,9 @@ export async function POST(req) {
             completionDate: new Date()
         });
 
-        // Update Streak
-        const user = await User.findById(userId);
-        const today = new Date();
-        const lastDate = user.lastStudyDate ? new Date(user.lastStudyDate) : null;
-
-        let streakUpdated = false;
-        // Check if studied today
-        const isSameDay = lastDate && (
-            lastDate.getDate() === today.getDate() &&
-            lastDate.getMonth() === today.getMonth() &&
-            lastDate.getFullYear() === today.getFullYear()
-        );
-
-        if (!isSameDay) {
-            // Basic check: if studied yesterday, increment. If gap > 1 day, reset? 
-            // For MVP simplicity: just increment.
-            user.streakDays += 1;
-            user.lastStudyDate = today;
-            await user.save();
-            streakUpdated = true;
-        }
+        // Update Streak - REMOVED per user request (Only Lessons update streak)
+        // const user = await User.findById(userId);
+        // ... streak logic removed ...
 
         return NextResponse.json({ message: 'Task Completed', streakUpdated, newStreak: user.streakDays });
 

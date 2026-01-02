@@ -1,7 +1,38 @@
 
 'use client';
 
+import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
+
 export default function MePage() {
+    const router = useRouter();
+    const [user, setUser] = useState(null);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        fetch('/api/me')
+            .then(res => res.json())
+            .then(data => {
+                if (data.user) setUser(data.user);
+            })
+            .finally(() => setLoading(false));
+    }, []);
+
+    const handleLogout = async () => {
+        try {
+            await fetch('/api/auth/logout', { method: 'POST' });
+            router.push('/login');
+            router.refresh();
+        } catch (error) {
+            console.error('Logout failed', error);
+        }
+    };
+
+    if (loading) return <div className="page-container">Loading...</div>;
+    if (!user) return <div className="page-container">Error loading profile</div>;
+
+    const joinedDate = new Date(user.createdAt).toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+
     return (
         <div style={{ maxWidth: '600px', margin: '0 auto' }}>
             <h1 className="title" style={{ marginBottom: '40px' }}>My Profile</h1>
@@ -11,11 +42,12 @@ export default function MePage() {
                     👤
                 </div>
                 <div>
-                    <h2 style={{ fontSize: '1.5rem', fontWeight: '800' }}>Student Name</h2>
-                    <p style={{ color: 'var(--text-muted)' }}>BSCS • Semester 1</p>
+                    <h2 style={{ fontSize: '1.5rem', fontWeight: '800' }}>{user.name}</h2>
+                    <p style={{ color: 'var(--text-muted)', fontWeight: '700' }}>{user.degree} ({user.degreeLevel}) • Semester {user.semester}</p>
+                    <p style={{ color: 'var(--primary)', fontSize: '0.9rem', fontWeight: '600', marginTop: '4px' }}>{user.university}</p>
                     <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
                         <span style={{ fontSize: '1.2rem' }}>🇵🇰</span>
-                        <span style={{ color: 'var(--primary)', fontWeight: '700' }}>Joined Dec 2025</span>
+                        <span style={{ color: 'var(--text-muted)', fontWeight: '600' }}>Joined {joinedDate}</span>
                     </div>
                 </div>
             </div>
@@ -31,7 +63,10 @@ export default function MePage() {
                         <span style={{ fontWeight: '700' }}>Sound Effects</span>
                         <button className="btn btn-primary" style={{ width: 'auto', padding: '6px 12px', fontSize: '0.8rem', background: '#e5e5e5', color: '#afafaf', boxShadow: 'none' }}>OFF</button>
                     </div>
-                    <button className="btn btn-primary" style={{ marginTop: '20px', background: '#ea2b2b', boxShadow: '0 4px 0 #a60000' }}>
+                    <button onClick={() => router.push('/me/course-selection')} className="btn btn-primary" style={{ marginTop: '20px', background: '#FFC800', boxShadow: '0 4px 0 #D9AA00', color: 'black' }}>
+                        📚 COURSE SELECTION
+                    </button>
+                    <button onClick={handleLogout} className="btn btn-primary" style={{ marginTop: '10px', background: '#ea2b2b', boxShadow: '0 4px 0 #a60000' }}>
                         SIGN OUT
                     </button>
                 </div>

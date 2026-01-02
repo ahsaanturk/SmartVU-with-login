@@ -17,6 +17,10 @@ export default function DashboardHome() {
 
     if (loading) return <div className="page-container">Loading...</div>;
     if (!data) return <div className="page-container">Error loading data</div>;
+    if (data.error) {
+        if (typeof window !== 'undefined') window.location.href = '/login';
+        return <div className="page-container">Redirecting...</div>;
+    }
 
     return (
         <div>
@@ -78,7 +82,7 @@ export default function DashboardHome() {
                                             ⏰ {timeLeft}
                                         </p>
                                     </div>
-                                    <Link href="/dashboard/learning" className="btn btn-primary" style={{ width: 'auto', padding: '10px 16px', fontSize: '0.9rem' }}>
+                                    <Link href="/learning" className="btn btn-primary" style={{ width: 'auto', padding: '10px 16px', fontSize: '0.9rem' }}>
                                         PRACTICE
                                     </Link>
                                 </div>

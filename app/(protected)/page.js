@@ -10,8 +10,8 @@ export default function DashboardHome() {
 
     useEffect(() => {
         Promise.all([
-            fetch('/api/dashboard/home').then(res => res.json()),
-            fetch('/api/leaderboard').then(res => res.json())
+            fetch('/api/dashboard/home', { cache: 'no-store' }).then(res => res.json()),
+            fetch('/api/leaderboard', { cache: 'no-store' }).then(res => res.json())
         ]).then(([dashboardData, leaderboardData]) => {
             setData({ ...dashboardData, weeklyLeaders: leaderboardData.weekly.slice(0, 3) });
             setLoading(false);
@@ -25,26 +25,39 @@ export default function DashboardHome() {
         return <div className="page-container">Redirecting...</div>;
     }
 
+    const userData = data.user || {};
+
     return (
         <div>
-            {/* Header / Stats */}
+            {/* Header / Top Bar */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
+                <div>
+                    <h1 style={{ fontSize: '1.8rem', fontWeight: '800', color: '#333' }}>Welcome, {userData.name}!</h1>
+                    <p style={{ color: 'var(--text-muted)' }}>Ready to learn?</p>
+                </div>
+                <div style={{ display: 'flex', gap: '16px' }}>
+                    <Link href="/progress"
+                        className="animate-pop-in"
+                        style={{
+                            display: 'flex', alignItems: 'center', gap: '8px',
+                            padding: '8px 16px', background: 'white',
+                            border: '2px solid #e5e5e5', borderRadius: '16px',
+                            textDecoration: 'none', color: '#333',
+                            fontWeight: '700', cursor: 'pointer',
+                            transition: 'transform 0.1s ease'
+                        }}>
+                        <span style={{ fontSize: '1.5rem', lineHeight: 1 }}>🔥</span>
+                        <span style={{ color: userData.streak > 0 ? '#ff9600' : '#e5e5e5' }}>{userData.streak}</span>
+                    </Link>
+                    <div className="stat-card" style={{ padding: '8px 16px', width: 'auto', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <span style={{ fontSize: '1.2rem', color: '#ffbd00' }}>⚡</span>
+                        <span>{userData.xp} XP</span>
+                    </div>
+                </div>
+            </div>
+
+            {/* Concept of the Day */}
             <div style={{ display: 'flex', gap: '20px', marginBottom: '32px', flexWrap: 'wrap' }}>
-                <div className="stat-card" style={{ flex: 1, minWidth: '150px', display: 'flex', alignItems: 'center', gap: '16px' }}>
-                    <span style={{ fontSize: '2.5rem' }}>🔥</span>
-                    <div>
-                        <h3 style={{ fontSize: '1.5rem', fontWeight: '800' }}>{data.user?.streak || 0}</h3>
-                        <p style={{ color: 'var(--text-muted)', fontWeight: '600' }}>Day Streak</p>
-                    </div>
-                </div>
-
-                <div className="stat-card" style={{ flex: 1, minWidth: '150px', display: 'flex', alignItems: 'center', gap: '16px' }}>
-                    <span style={{ fontSize: '2.5rem' }}>⚡</span>
-                    <div>
-                        <h3 style={{ fontSize: '1.5rem', fontWeight: '800' }}>{data.user?.xp || 0}</h3>
-                        <p style={{ color: 'var(--text-muted)', fontWeight: '600' }}>Total XP</p>
-                    </div>
-                </div>
-
                 <div className="stat-card" style={{ flex: 2, minWidth: '300px', background: '#58cc02', color: 'white', border: 'none', boxShadow: '0 4px 0 #46a302' }}>
                     <h3 style={{ fontSize: '1.2rem', fontWeight: '800', marginBottom: '8px' }}>Concept of the Day</h3>
                     <p style={{ fontWeight: '600' }}>{data.concept.title}: {data.concept.description}</p>

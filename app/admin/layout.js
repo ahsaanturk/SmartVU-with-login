@@ -57,34 +57,88 @@ export default function AdminLayout({ children }) {
             </div>
         </div>
     );
+    // Determine Mobile Header Title
+    const getPageTitle = () => {
+        if (pathname === '/admin') return 'Dashboard';
+        if (pathname.includes('/users')) return 'Students';
+        if (pathname.includes('/courses')) return 'Courses';
+        if (pathname.includes('/content')) return 'Content';
+        if (pathname.includes('/tasks')) return 'Alerts';
+        return 'Admin';
+    };
 
     return (
         <div className="dashboard-container">
-            {/* Desktop Sidebar */}
-            <aside className="sidebar" style={{ background: '#fff', width: '260px', borderRight: '2px solid #e5e5e5', display: 'flex', flexDirection: 'column' }}>
+            {/* Desktop Sidebar (Left) */}
+            <aside className="sidebar desktop-only" style={{ background: '#fff', width: '260px', borderRight: '2px solid #e5e5e5', display: 'flex', flexDirection: 'column' }}>
                 <SidebarContent />
             </aside>
 
-            {/* Mobile Header / Hamburger */}
-            <div style={{ padding: '16px', background: 'white', borderBottom: '2px solid #e5e5e5', alignItems: 'center', justifyContent: 'space-between', position: 'fixed', top: 0, left: 0, right: 0, zIndex: 50 }} className="mobile-header">
-                <span style={{ fontWeight: 800, fontSize: '1.2rem', color: '#2B2B2B' }}>SmartVU Admin</span>
-                <button onClick={() => setIsMobileOpen(true)} style={{ background: 'none', border: 'none', fontSize: '1.5rem', cursor: 'pointer', color: '#58cc02' }}>☰</button>
-            </div>
+            {/* Mobile Bottom Navigation (Fixed Bottom) */}
+            <nav className="mobile-only mobile-bottom-nav">
+                {navItems.map((item) => {
+                    const isActive = pathname === item.path || (item.path !== '/admin' && pathname.startsWith(item.path));
+                    return (
+                        <Link
+                            key={item.path}
+                            href={item.path}
+                            style={{
+                                flex: 1,
+                                display: 'flex',
+                                flexDirection: 'column',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                padding: '8px',
+                                color: isActive ? '#58cc02' : '#777',
+                                textDecoration: 'none',
+                                background: isActive ? 'rgba(88, 204, 2, 0.05)' : 'transparent',
+                            }}
+                        >
+                            <span style={{ fontSize: '1.4rem', lineHeight: 1, marginBottom: '4px' }}>{item.icon}</span>
+                            <span style={{ fontSize: '0.7rem', fontWeight: isActive ? '700' : '600' }}>{item.name.split(' ')[0]}</span>
+                        </Link>
+                    );
+                })}
+            </nav>
+
             <style jsx global>{`
-                .mobile-header { display: none !important; }
+                /* Default Desktop */
+                .dashboard-container {
+                    display: flex;
+                    height: 100vh;
+                    overflow: hidden;
+                }
+                .mobile-only {
+                    display: none !important;
+                }
+                
+                /* Mobile Styles */
                 @media (max-width: 768px) {
-                    .mobile-header { display: flex !important; }
-                    .main-content { margin-left: 0 !important; padding-top: 80px !important; }
+                    .desktop-only {
+                        display: none !important;
+                    }
+                    .mobile-only {
+                        display: flex !important;
+                    }
+
+                    /* Bottom Nav Styling */
+                    .mobile-bottom-nav {
+                        position: fixed;
+                        bottom: 0;
+                        left: 0;
+                        right: 0;
+                        height: 70px;
+                        background: white;
+                        border-top: 2px solid #e5e5e5;
+                        z-index: 100;
+                        padding-bottom: env(safe-area-inset-bottom); /* iOS Safe Area */
+                    }
+
+                    .main-content {
+                        padding-bottom: 90px !important; /* Space for bottom nav */
+                    }
                 }
             `}</style>
-
-            {/* Mobile Drawer Overlay */}
-            <div className={`sidebar-overlay ${isMobileOpen ? 'open' : ''}`} onClick={() => setIsMobileOpen(false)} />
-
-            {/* Mobile Drawer */}
-            <aside className={`sidebar-drawer ${isMobileOpen ? 'open' : ''}`}>
-                <SidebarContent />
-            </aside>
 
             <main className="main-content" style={{ flex: 1, background: '#fcfcfc', overflowY: 'auto' }}>
                 {children}

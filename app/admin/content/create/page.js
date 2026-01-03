@@ -133,7 +133,15 @@ export default function UploadPage() {
     };
 
     return (
-        <div className="page-container">
+        <div className="page-container" style={{
+            maxWidth: '1200px',
+            margin: '0 auto',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'stretch',
+            justifyContent: 'flex-start',
+            minHeight: 'auto'
+        }}>
             <div style={{ maxWidth: '600px', margin: '0 auto' }}>
                 <Link href="/admin/content" style={{ color: 'var(--text-muted)', fontWeight: '700', marginBottom: '16px', display: 'inline-block' }}>
                     ← BACK TO CONTENT

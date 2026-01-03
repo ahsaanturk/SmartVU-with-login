@@ -33,7 +33,84 @@ export default function ProgressPage() {
                 <div style={{ fontSize: '4rem', marginBottom: '8px' }}>🔥</div>
                 <h1 style={{ fontSize: '3rem', fontWeight: '800', marginBottom: '0' }}>{userData?.streakDays || 0}</h1>
                 <p style={{ fontSize: '1.2rem', fontWeight: '600', opacity: 0.9 }}>Day Streak</p>
-                <p style={{ fontSize: '0.9rem', marginTop: '16px' }}>Keep learning every day to build your streak!</p>
+
+                {/* Week Streak View */}
+                <div style={{ display: 'flex', justifyContent: 'center', gap: '8px', marginTop: '32px' }}>
+                    {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((dayInitial, idx) => {
+                        // Logic to determine status
+                        const today = new Date();
+                        const currentDayIdx = today.getDay(); // 0 = Sun
+
+                        const isToday = idx === currentDayIdx;
+                        const isFuture = idx > currentDayIdx;
+
+                        // Check history
+                        let isCompleted = false;
+                        if (userData?.streakHistory) {
+                            isCompleted = userData.streakHistory.some(dateStr => {
+                                const d = new Date(dateStr);
+                                // Check if this history entry is in the CURRENT week
+                                // Simple check: same year, month, and date matches the target day of this week
+                                // This is tricky. simpler: check if it's within last 7 days AND matches the day index?
+                                // No, visual requirement is "Sun Mon ... Sat". It implies THIS calendar week.
+
+                                // Calculate the date for this index in the current week
+                                const startOfWeek = new Date(today);
+                                startOfWeek.setDate(today.getDate() - currentDayIdx); // Go back to Sunday
+
+                                const targetDate = new Date(startOfWeek);
+                                targetDate.setDate(startOfWeek.getDate() + idx);
+
+                                return d.getDate() === targetDate.getDate() &&
+                                    d.getMonth() === targetDate.getMonth() &&
+                                    d.getFullYear() === targetDate.getFullYear();
+                            });
+                        }
+
+                        // Special case: if today is completed, isCompleted will be true.
+
+                        let bgColor = 'rgba(255,255,255,0.2)';
+                        let borderColor = 'transparent';
+                        let opacity = 1;
+                        let flameColor = 'rgba(255,255,255,0.5)';
+
+                        if (isFuture) {
+                            opacity = 0.5;
+                        } else if (isCompleted) {
+                            bgColor = 'white';
+                            flameColor = '#ff9600';
+                        } else if (isToday) {
+                            bgColor = 'rgba(255,255,255,0.1)';
+                            borderColor = 'white';
+                            flameColor = 'white'; // Placeholder until completed
+                        }
+
+                        return (
+                            <div key={idx} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', opacity }}>
+                                <p style={{ fontSize: '0.8rem', fontWeight: 'bold', marginBottom: '4px' }}>{dayInitial}</p>
+                                <div style={{
+                                    width: '40px', height: '40px',
+                                    borderRadius: '50%',
+                                    background: bgColor,
+                                    border: `2px solid ${borderColor}`,
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                    fontSize: '1.2rem',
+                                    color: flameColor
+                                }}>
+                                    🔥
+                                </div>
+                                {isToday && !isCompleted && (
+                                    <div style={{ width: '6px', height: '6px', background: 'white', borderRadius: '50%', marginTop: '4px' }}></div>
+                                )}
+                            </div>
+                        );
+                    })}
+                </div>
+
+                <p style={{ fontSize: '0.9rem', marginTop: '24px', opacity: 0.9 }}>
+                    🔥 Pass today’s lecture final quiz to complete your streak<br />
+                    <span style={{ fontSize: '0.8rem', opacity: 0.7 }}>ℹ️ Practice quizzes do not affect streaks</span>
+                </p>
             </div>
 
             {/* Leaderboard Section */}

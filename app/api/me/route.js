@@ -17,7 +17,7 @@ export async function GET() {
         const decoded = jwt.verify(token.value, process.env.JWT_SECRET);
         await dbConnect();
 
-        const user = await User.findById(decoded.userId).select('-password -otp');
+        const user = await User.findById(decoded.userId).select('-password -otp'); // streakHistory is included by default unless excluded
 
         if (!user) {
             return NextResponse.json({ error: 'User not found' }, { status: 404 });

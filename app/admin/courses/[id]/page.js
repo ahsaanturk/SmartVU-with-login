@@ -137,7 +137,15 @@ export default function CourseEditor({ params }) {
     if (!course) return <div className="page-container">Course not found</div>;
 
     return (
-        <div className="page-container">
+        <div className="page-container" style={{
+            maxWidth: '1200px',
+            margin: '0 auto',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'stretch',
+            justifyContent: 'flex-start',
+            minHeight: 'auto'
+        }}>
             <Link href="/admin/courses" style={{ color: 'var(--text-muted)', fontWeight: '700', marginBottom: '16px', display: 'inline-block' }}>
                 ← BACK TO COURSES
             </Link>

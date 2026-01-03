@@ -89,6 +89,9 @@ const UserSchema = new mongoose.Schema({
     lastStudyDate: {
         type: Date,
     },
+    streakHistory: [{
+        type: Date // Tracks exact dates of streak activity
+    }],
     xp: {
         type: Number,
         default: 0

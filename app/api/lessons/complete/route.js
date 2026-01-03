@@ -87,24 +87,59 @@ export async function POST(req) {
         user.xp = (user.xp || 0) + xpGained;
         user.weeklyXP = (user.weeklyXP || 0) + xpGained;
 
-        // Streak Logic
+        // Streak Logic (Strict: Only on Final Quiz, Once per Day)
         const today = new Date();
         const lastDate = user.lastStudyDate ? new Date(user.lastStudyDate) : null;
         let streakUpdated = false;
 
-        const isSameDay = lastDate && (
-            lastDate.getDate() === today.getDate() &&
-            lastDate.getMonth() === today.getMonth() &&
-            lastDate.getFullYear() === today.getFullYear()
-        );
+        // Normalizing function to ignore time components for date comparison
+        const isSameDay = (d1, d2) => {
+            return d1.getDate() === d2.getDate() &&
+                d1.getMonth() === d2.getMonth() &&
+                d1.getFullYear() === d2.getFullYear();
+        };
 
-        if (!isSameDay) {
-            // Check concurrency: if lastDate was yesterday, increment. Else reset.
-            // Simplified logic: Just increment if not same day for MVP.
-            user.streakDays = (user.streakDays || 0) + 1;
-            user.lastStudyDate = today;
-            streakUpdated = true;
+        const isYesterday = (d1, d2) => {
+            const yesterday = new Date(d1);
+            yesterday.setDate(d1.getDate() - 1);
+            return isSameDay(yesterday, d2);
+        };
+
+        // Initialize history if missing
+        if (!user.streakHistory) {
+            user.streakHistory = [];
         }
+
+        if (!lastDate) {
+            // First time ever
+            user.streakDays = 1;
+            user.lastStudyDate = today;
+            user.streakHistory.push(today);
+            streakUpdated = true;
+        } else if (!isSameDay(today, lastDate)) {
+            // Not today, so potentially actionable
+            if (isYesterday(today, lastDate)) {
+                // Continuation
+                user.streakDays = (user.streakDays || 0) + 1;
+                streakUpdated = true;
+            } else {
+                // Broken streak
+                user.streakDays = 1; // Reset to 1 (today counts)
+                // streakUpdated is implicitly true for user feedback, as they "gained a day" roughly,
+                // but strictly speaking they lost the big number. 
+                // Let's return true so they see the fire animation for "Streak Active" today.
+                streakUpdated = true;
+            }
+
+            user.lastStudyDate = today;
+            user.streakHistory.push(today);
+
+            // Cleanup history (keep last 60 days to avoid bloat, we only need ~7-30 for UI)
+            if (user.streakHistory.length > 60) {
+                user.streakHistory = user.streakHistory.slice(-60);
+            }
+        }
+        // If isSameDay (today), do nothing. Streak already counted for today.
 
         await user.save();
         await progress.save();

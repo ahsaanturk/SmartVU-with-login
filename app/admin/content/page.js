@@ -38,7 +38,15 @@ export default function ContentPage() {
     const tabs = ['All', 'Lecture', 'Handout', 'Quiz', 'Quote', 'Concept'];
 
     return (
-        <div className="page-container">
+        <div className="page-container" style={{
+            maxWidth: '1200px',
+            margin: '0 auto',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'stretch',
+            justifyContent: 'flex-start',
+            minHeight: 'auto'
+        }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
                 <div>
                     <h1 className="title">Content Library</h1>

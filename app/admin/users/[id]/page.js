@@ -69,7 +69,15 @@ export default function EditUserPage({ params }) {
     if (loading) return <div className="page-container">Loading...</div>;
 
     return (
-        <div className="page-container">
+        <div className="page-container" style={{
+            maxWidth: '1200px',
+            margin: '0 auto',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'stretch',
+            justifyContent: 'flex-start',
+            minHeight: 'auto'
+        }}>
             <div style={{ maxWidth: '600px', margin: '0 auto', width: '100%' }}>
                 <Link href="/admin/users" style={{ color: 'var(--text-muted)', fontWeight: '700', marginBottom: '16px', display: 'inline-block' }}>
                     ← BACK TO USERS

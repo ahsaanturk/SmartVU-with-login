@@ -30,12 +30,16 @@
   margin: 0;
 }
 
+html,
 body {
   font-family: var(--font-main);
   background-color: var(--bg-main);
   color: var(--text-main);
   -webkit-font-smoothing: antialiased;
   min-height: 100vh;
+  width: 100%;
+  overflow-x: hidden;
+  /* Strict horizontal scroll prevention */
   display: flex;
   flex-direction: column;
 }
@@ -49,27 +53,33 @@ a {
 .page-container {
   display: flex;
   min-height: 100vh;
+  width: 100%;
+  /* Ensure full width */
+  max-width: 100%;
+  /* Prevent overflow */
   align-items: center;
   justify-content: center;
   padding: 20px;
   background-color: var(--bg-main);
+  overflow-x: hidden;
+  /* Double check */
 }
 
 .auth-card {
   width: 100%;
   max-width: 400px;
   padding: 40px;
-  /* On mobile we want it cleaner, maybe less 'card' like or full width */
   background: white;
   border-radius: 24px;
-  /* Use simple border for card definition if needed, or just white on white */
 }
 
 @media (max-width: 600px) {
   .page-container {
     align-items: flex-start;
-    /* Push to top on mobile */
     padding-top: 40px;
+    padding-left: 16px;
+    /* Safe padding */
+    padding-right: 16px;
   }
 
   .auth-card {

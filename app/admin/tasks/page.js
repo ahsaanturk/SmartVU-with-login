@@ -16,6 +16,7 @@ export default function CreateTask() {
     const [loading, setLoading] = useState(false);
     const [tasks, setTasks] = useState([]);
     const [availableCourses, setAvailableCourses] = useState([]);
+    const [activeTab, setActiveTab] = useState('today'); // 'today' | 'week' | 'all'
 
     useEffect(() => {
         fetchTasks();
@@ -23,9 +24,9 @@ export default function CreateTask() {
     }, []);
 
     const fetchTasks = () => {
-        // Fetch all pending status by default implies "active" alerts on admin side usually
-        // But let's fetch 'Pending' status tasks for list
-        fetch('/api/tasks?status=Pending')
+        // Fetch ALL tasks for admin to handle "Total" view
+        // The API now supports status=All for admins
+        fetch('/api/tasks?status=All')
             .then(res => res.json())
             .then(data => setTasks(data.tasks || []));
     };
@@ -35,6 +36,23 @@ export default function CreateTask() {
             .then(res => res.json())
             .then(data => setAvailableCourses(data.courses || []));
     };
+
+    // Filter Logic
+    const getFilteredTasks = () => {
+        const now = new Date();
+        const startOfToday = new Date(now.setHours(0, 0, 0, 0));
+        const oneWeekAgo = new Date(new Date().setDate(new Date().getDate() - 7));
+
+        if (activeTab === 'today') {
+            return tasks.filter(t => new Date(t.createdAt) >= startOfToday);
+        }
+        if (activeTab === 'week') {
+            return tasks.filter(t => new Date(t.createdAt) >= oneWeekAgo);
+        }
+        return tasks; // 'all'
+    };
+
+    const filteredTasks = getFilteredTasks();
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -66,6 +84,7 @@ export default function CreateTask() {
                 alert('Alert/Task Created!');
                 setFormData({ title: '', courseCode: '', type: 'Quiz', dueDate: '', description: '', quizQuestionsJson: '' });
                 fetchTasks();
+                setActiveTab('today'); // Switch to recent to see new task
             } else {
                 const data = await res.json();
                 alert('Failed to create task: ' + (data.error || 'Unknown error'));
@@ -193,9 +212,53 @@ export default function CreateTask() {
                     </form>
                 </div>
 
-                <h3 style={{ marginBottom: '16px' }}>Recent Alerts</h3>
+                <div style={{ display: 'flex', gap: '16px', marginBottom: '24px', borderBottom: '1px solid #e5e5e5' }}>
+                    <button
+                        onClick={() => setActiveTab('today')}
+                        style={{
+                            background: 'none',
+                            border: 'none',
+                            padding: '12px 8px',
+                            fontWeight: 'bold',
+                            borderBottom: activeTab === 'today' ? '3px solid var(--primary)' : '3px solid transparent',
+                            color: activeTab === 'today' ? 'var(--primary)' : 'var(--text-muted)',
+                            cursor: 'pointer'
+                        }}
+                    >
+                        Today
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('week')}
+                        style={{
+                            background: 'none',
+                            border: 'none',
+                            padding: '12px 8px',
+                            fontWeight: 'bold',
+                            borderBottom: activeTab === 'week' ? '3px solid var(--primary)' : '3px solid transparent',
+                            color: activeTab === 'week' ? 'var(--primary)' : 'var(--text-muted)',
+                            cursor: 'pointer'
+                        }}
+                    >
+                        This Week
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('all')}
+                        style={{
+                            background: 'none',
+                            border: 'none',
+                            padding: '12px 8px',
+                            fontWeight: 'bold',
+                            borderBottom: activeTab === 'all' ? '3px solid var(--primary)' : '3px solid transparent',
+                            color: activeTab === 'all' ? 'var(--primary)' : 'var(--text-muted)',
+                            cursor: 'pointer'
+                        }}
+                    >
+                        All Time ({tasks.length})
+                    </button>
+                </div>
+
                 <div style={{ display: 'grid', gap: '16px' }}>
-                    {tasks.map(task => (
+                    {filteredTasks.map(task => (
                         <div key={task._id} className="stat-card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px' }}>
                             <div>
                                 <div style={{ display: 'flex', gap: '8px', marginBottom: '4px' }}>
@@ -203,18 +266,27 @@ export default function CreateTask() {
                                     <span style={{ background: '#fff4db', color: '#ffa500', padding: '2px 8px', borderRadius: '4px', fontSize: '0.8rem', fontWeight: 'bold' }}>{task.type}</span>
                                 </div>
                                 <div style={{ fontWeight: '700' }}>{task.title}</div>
-                                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Due: {new Date(task.dueDate).toLocaleDateString()}</div>
+                                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Posted: {new Date(task.createdAt).toLocaleDateString()}</div>
                             </div>
-                            <button
-                                onClick={() => handleDelete(task._id)}
-                                style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.2rem' }}
-                                title="Delete Task"
-                            >
-                                🗑️
-                            </button>
+                            <div style={{ display: 'flex', gap: '8px' }}>
+                                <Link
+                                    href={`/admin/tasks/${task._id}`}
+                                    style={{ background: '#f0f0f0', padding: '8px', borderRadius: '50%', textDecoration: 'none', fontSize: '1.2rem' }}
+                                    title="Edit Task"
+                                >
+                                    ✏️
+                                </Link>
+                                <button
+                                    onClick={() => handleDelete(task._id)}
+                                    style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.2rem' }}
+                                    title="Delete Task"
+                                >
+                                    🗑️
+                                </button>
+                            </div>
                         </div>
                     ))}
-                    {tasks.length === 0 && <p style={{ color: 'var(--text-muted)' }}>No recent alerts found.</p>}
+                    {filteredTasks.length === 0 && <p style={{ color: 'var(--text-muted)' }}>No tasks found in this view.</p>}
                 </div>
             </div>
         </div>

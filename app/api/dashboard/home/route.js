@@ -25,8 +25,15 @@ export async function GET(req) {
 
         const user = await User.findById(userId);
 
-        // 1. Fetch Active Tasks (Pending)
-        const tasks = await Task.find({}).sort({ dueDate: 1 }); // limit?
+        // 1. Fetch Active Tasks (Pending) - Filtered by Enrolled Courses & Future Due Date
+        const userCourses = user.selectedCourses || [];
+        const now = new Date();
+        now.setHours(0, 0, 0, 0); // Include today's tasks
+
+        const tasks = await Task.find({
+            courseCode: { $in: userCourses },
+            dueDate: { $gte: now }
+        }).sort({ dueDate: 1 });
 
         // Filter out completed ones
         const completedStatuses = await UserTaskStatus.find({ userId, status: 'Completed' });

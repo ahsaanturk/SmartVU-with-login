@@ -38,6 +38,10 @@ const UserSchema = new mongoose.Schema({
         enum: ['student', 'admin'],
         default: 'student',
     },
+    emailNotifications: {
+        type: Boolean,
+        default: true
+    },
     // Student MVP Fields
     university: {
         type: String,

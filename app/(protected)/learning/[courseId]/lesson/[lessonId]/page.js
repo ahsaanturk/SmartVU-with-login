@@ -185,7 +185,8 @@ export default function LessonPage({ params }) {
                     ) : (
                         <>
                             <h1 className="title" style={{ fontSize: '1.5rem', marginBottom: '20px' }}>{lesson.title}</h1>
-                            <div style={{ position: 'relative', paddingBottom: '56.25%', height: 0, overflow: 'hidden', borderRadius: '16px', marginBottom: '24px', background: 'black' }}>
+
+                            <div className="video-wrapper">
                                 {videoId && (
                                     <iframe
                                         style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' }}
@@ -197,6 +198,27 @@ export default function LessonPage({ params }) {
                                     ></iframe>
                                 )}
                             </div>
+
+                            <style jsx>{`
+                                .video-wrapper {
+                                    position: relative;
+                                    padding-bottom: 56.25%;
+                                    height: 0;
+                                    overflow: hidden;
+                                    border-radius: 16px;
+                                    margin-bottom: 24px;
+                                    background: black;
+                                }
+
+                                @media (max-width: 768px) {
+                                    .video-wrapper {
+                                        margin-left: -20px;
+                                        margin-right: -20px;
+                                        width: calc(100% + 40px);
+                                        border-radius: 0;
+                                    }
+                                }
+                            `}</style>
                             <div className="stat-card" style={{ marginBottom: '32px' }}>
                                 <h3 style={{ marginBottom: '12px' }}>Summary</h3>
                                 <p style={{ lineHeight: '1.6' }}>{lesson.summary}</p>

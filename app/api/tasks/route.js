@@ -9,6 +9,8 @@ import { cookies } from 'next/headers';
 
 import User from '@/models/User';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(req) {
     try {
         await dbConnect();
@@ -42,18 +44,29 @@ export async function GET(req) {
 
         // Admin sees all? Or we can just fallback to {} for admin.
         const isAdmin = user?.role === 'admin';
+        console.log(`[API Debug] User: ${user?.email}, Role: ${user?.role}, isAdmin: ${isAdmin}, Status: ${statusFilter}`);
+
         const courseQuery = isAdmin ? {} : { courseCode: { $in: userCourses } };
 
         if (statusFilter === 'Pending') {
-            // Get all tasks NOT in UserTaskStatus(Completed/Missed) AND match course
+            // ...
             const allTasks = await Task.find(courseQuery).sort({ dueDate: 1 });
-            const statuses = await UserTaskStatus.find({ userId });
-
-            // Filter out completed ones
-            const doneIds = statuses.map(s => s.taskId.toString());
-            const pendingTasks = allTasks.filter(t => !doneIds.includes(t._id.toString()));
-
+            // ...
             return NextResponse.json({ tasks: pendingTasks });
+        } else if (statusFilter === 'All') {
+            // Changing logic: If Admin OR if request specifically asks for All (and we trust the user context?)
+            // Actually, if a Student asks for All, they should only see THEIR courses.
+
+            if (isAdmin) {
+                const allTasks = await Task.find({}).sort({ createdAt: -1 });
+                console.log(`[API Debug] Admin fetching ALL. Count: ${allTasks.length}`);
+                return NextResponse.json({ tasks: allTasks });
+            } else {
+                // Verify student behavior for 'All'? 
+                // For now, let's unlock it for testing if it's the issue.
+                console.log('[API Debug] Student trying to fetch All - returning empty for now');
+                return NextResponse.json({ tasks: [] });
+            }
         }
         else {
             // Get tasks FROM UserTaskStatus
@@ -83,32 +96,63 @@ export async function POST(req) {
         // 1. Create Task
         const task = await Task.create(body);
 
-        // 2. Fetch Enrolled Users (via CourseGroup - Scalable)
-        // Find the single CourseGroup document
-        const group = await CourseGroup.findOne({ courseCode: body.courseCode }).populate('studentIds');
-        const users = group ? group.studentIds : [];
+        // 2. Fetch Enrolled Users (via CourseGroup or User.selectedCourses)
+        // Since CourseGroup might not be fully populated in this MVP, let's query Users directly for reliability
+        // Find users who have this course AND have notifications enabled
+        const users = await User.find({
+            selectedCourses: body.courseCode,
+            emailNotifications: { $ne: false }, // Treat undefined as true (default)
+            role: 'student'
+        }).select('email name');
+
         const emails = users.map(u => u.email).filter(e => e);
 
-        // 3. Send Email (Mock/Actual)
+        // 3. Send Email
         if (emails.length > 0) {
-            // Mocking logic or strictly implementing if env present
-            console.log(`[Email Mock] Sending alert "${body.title}" to:`, emails);
+            try {
+                const nodemailer = require('nodemailer');
 
-            // TODO: Uncomment when SMTP is configured
-            /*
-            import nodemailer from 'nodemailer';
-            const transporter = nodemailer.createTransport({
-                 host: process.env.SMTP_HOST,
-                 port: process.env.SMTP_PORT,
-                 auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS }
-            });
-            await transporter.sendMail({
-                from: '"SmartVU Admin" <admin@smartvu.edu.pk>',
-                to: emails, // BCC is better for privacy: bcc: emails
-                subject: `New Alert: ${task.courseCode} - ${task.title}`,
-                text: `Dear Student,\n\nA new task "${task.title}" has been posted for ${task.courseCode}.\nType: ${task.type}\nDue: ${new Date(task.dueDate).toLocaleDateString()}\n\nCheck your portal for details.`
-            });
-            */
+                // Check if SMTP vars exist
+                if (process.env.SMTP_HOST && process.env.SMTP_USER) {
+                    const transporter = nodemailer.createTransport({
+                        host: process.env.SMTP_HOST,
+                        port: process.env.SMTP_PORT || 587,
+                        secure: false, // true for 465, false for other ports
+                        auth: {
+                            user: process.env.SMTP_USER,
+                            pass: process.env.SMTP_PASS
+                        }
+                    });
+
+                    // Calculate Time Remaining for the email content
+                    const dueDate = new Date(body.dueDate);
+                    const now = new Date();
+                    const diffTime = Math.abs(dueDate - now);
+                    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+                    const diffHours = Math.floor((diffTime % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+
+                    // Send to each user individually to personalize (or BCC for bulk)
+                    // For MVP with few users, individual is fine and more personal.
+                    // To avoid spam limits, BCC is better. Let's use BCC for efficiency.
+
+                    const { getNewTaskTemplate } = require('@/lib/emailTemplates');
+                    const htmlContent = getNewTaskTemplate(body, diffDays, diffHours);
+
+                    await transporter.sendMail({
+                        from: '"SmartVU Notifications" <' + process.env.SMTP_USER + '>',
+                        bcc: emails, // Use BCC
+                        subject: `New Task: ${body.courseCode} - ${body.title}`,
+                        html: htmlContent
+                    });
+
+                    console.log(`[Email] Sent to ${emails.length} recipients`);
+                } else {
+                    console.warn('[Email] SMTP Setup Missing - check .env.local');
+                    console.log('Would send to:', emails);
+                }
+            } catch (err) {
+                console.error('[Email Failed]', err);
+            }
         }
 
         return NextResponse.json({ task, recipients: emails.length });

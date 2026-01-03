@@ -33,6 +33,24 @@ export default function MePage() {
 
     const joinedDate = new Date(user.createdAt).toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
 
+    const handleToggleNotifications = async () => {
+        const newState = !user.emailNotifications;
+        try {
+            // Optimistic update
+            setUser(prev => ({ ...prev, emailNotifications: newState }));
+
+            await fetch('/api/me/preferences', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ emailNotifications: newState })
+            });
+        } catch (error) {
+            console.error('Failed to update settings');
+            // Revert on failure
+            setUser(prev => ({ ...prev, emailNotifications: !newState }));
+        }
+    };
+
     return (
         <div style={{ maxWidth: '600px', margin: '0 auto' }}>
             <h1 className="title" style={{ marginBottom: '40px' }}>My Profile</h1>
@@ -62,7 +80,20 @@ export default function MePage() {
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 0', borderBottom: '1px solid #e5e5e5' }}>
                         <span style={{ fontWeight: '700' }}>Email Notifications</span>
-                        <button className="btn btn-primary" style={{ width: 'auto', padding: '6px 12px', fontSize: '0.8rem' }}>ON</button>
+                        <button
+                            onClick={handleToggleNotifications}
+                            className={`btn ${user.emailNotifications ? 'btn-primary' : ''}`}
+                            style={{
+                                width: 'auto',
+                                padding: '6px 12px',
+                                fontSize: '0.8rem',
+                                background: user.emailNotifications ? undefined : '#e5e5e5',
+                                color: user.emailNotifications ? undefined : '#afafaf',
+                                boxShadow: user.emailNotifications ? undefined : 'none'
+                            }}
+                        >
+                            {user.emailNotifications ? 'ON' : 'OFF'}
+                        </button>
                     </div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 0', borderBottom: '1px solid #e5e5e5' }}>
                         <span style={{ fontWeight: '700' }}>Sound Effects</span>

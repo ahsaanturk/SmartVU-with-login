@@ -24,6 +24,17 @@ const ModuleSchema = new mongoose.Schema({
             options: [String],
             correctAnswer: Number
         }]
+    },
+    preAssessment: {
+        questions: [{
+            question: String,
+            options: [String],
+            correctAnswer: Number // Index
+        }],
+        passingPercentage: {
+            type: Number,
+            default: 60
+        }
     }
 }, { timestamps: true });
 

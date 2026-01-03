@@ -32,20 +32,18 @@ export default function CourseEditor({ params }) {
         correctOption: 0
     });
 
-    // Unit Quiz State
-    const [activeUnitQuizForm, setActiveUnitQuizForm] = useState(null); // Module ID
-    const [unitQuizData, setUnitQuizData] = useState({
-        question: '',
-        options: ['', '', '', ''],
-        correctAnswer: 0
-    });
+
+
+    // Pre-Assessment State
+    const [activePreAssessmentForm, setActivePreAssessmentForm] = useState(null);
+    const [preAssessmentJson, setPreAssessmentJson] = useState('');
 
     useEffect(() => {
         fetchCourseData();
     }, [id]);
 
     const fetchCourseData = () => {
-        fetch(`/api/courses/${id}`)
+        fetch(`/api/courses/${id}`, { cache: 'no-store' })
             .then(res => res.json())
             .then(data => {
                 if (data.course) {
@@ -65,7 +63,7 @@ export default function CourseEditor({ params }) {
                 title: moduleTitle,
                 order: modules.length + 1
             }),
-            headers: { ' Content-Type': 'application/json' }
+            headers: { 'Content-Type': 'application/json' }
         });
 
         if (res.ok) {
@@ -112,24 +110,33 @@ export default function CourseEditor({ params }) {
         }
     };
 
-    const handleSaveUnitQuiz = async (e, moduleId) => {
-        e.preventDefault();
-        const res = await fetch(`/api/admin/modules/${moduleId}/quiz`, {
-            method: 'POST',
-            body: JSON.stringify({
-                questions: [{
-                    question: unitQuizData.question,
-                    options: unitQuizData.options,
-                    correctAnswer: Number(unitQuizData.correctAnswer)
-                }]
-            }),
-            headers: { 'Content-Type': 'application/json' }
-        });
 
-        if (res.ok) {
-            setActiveUnitQuizForm(null);
-            alert('Unit/Pre-Quiz Saved!');
-            fetchCourseData();
+
+    const handleSavePreAssessment = async (e, moduleId) => {
+        e.preventDefault();
+        try {
+            // Validate JSON
+            const data = JSON.parse(preAssessmentJson);
+            if (!data.questions || !Array.isArray(data.questions)) {
+                alert('Invalid JSON: Must contain "questions" array.');
+                return;
+            }
+
+            const res = await fetch(`/api/admin/modules/${moduleId}/pre-assessment`, {
+                method: 'POST',
+                body: JSON.stringify(data),
+                headers: { 'Content-Type': 'application/json' }
+            });
+
+            if (res.ok) {
+                setActivePreAssessmentForm(null);
+                alert('Pre-Assessment Saved!');
+                fetchCourseData();
+            } else {
+                alert('Failed to save.');
+            }
+        } catch (err) {
+            alert('Invalid JSON Syntax');
         }
     };
 
@@ -185,57 +192,59 @@ export default function CourseEditor({ params }) {
                                 <h3 style={{ fontSize: '1.2rem' }}>Unit {index + 1}: {module.title}</h3>
                                 <span style={{ color: 'var(--text-muted)', fontWeight: '700' }}>{module.lessons.length} LESSONS</span>
                             </div>
-                            <button
-                                className="btn btn-outline"
-                                style={{ width: 'auto', fontSize: '0.8rem', padding: '8px 12px' }}
-                                onClick={() => {
-                                    setActiveUnitQuizForm(activeUnitQuizForm === module._id ? null : module._id);
-                                    // Use first question if exists
-                                    if (module.unitQuiz && module.unitQuiz.questions.length > 0) {
-                                        const q = module.unitQuiz.questions[0];
-                                        setUnitQuizData({
-                                            question: q.question,
-                                            options: q.options,
-                                            correctAnswer: q.correctAnswer
-                                        });
-                                    } else {
-                                        setUnitQuizData({ question: '', options: ['', '', '', ''], correctAnswer: 0 });
-                                    }
-                                }}
-                            >
-                                ⚡ PRE-QUIZ
-                            </button>
+                            {index !== 0 && (
+                                <button
+                                    className="btn btn-outline"
+                                    style={{ width: 'auto', fontSize: '0.8rem', padding: '8px 12px', marginLeft: '8px', borderColor: '#1cb0f6', color: '#1cb0f6' }}
+                                    onClick={() => {
+                                        setActivePreAssessmentForm(activePreAssessmentForm === module._id ? null : module._id);
+                                        if (module.preAssessment && module.preAssessment.questions.length > 0) {
+                                            // Pretty print existing JSON
+                                            setPreAssessmentJson(JSON.stringify({
+                                                questions: module.preAssessment.questions,
+                                                passingPercentage: module.preAssessment.passingPercentage
+                                            }, null, 2));
+                                        } else {
+                                            // Default Template
+                                            setPreAssessmentJson(JSON.stringify({
+                                                passingPercentage: 60,
+                                                questions: [
+                                                    {
+                                                        question: "Sample Question?",
+                                                        options: ["A", "B", "C", "D"],
+                                                        correctAnswer: 0
+                                                    }
+                                                ]
+                                            }, null, 2));
+                                        }
+                                    }}
+                                >
+                                    📝 PRE-ASSESSMENT
+                                </button>
+                            )}
                         </div>
 
-                        {/* Unit Quiz Form */}
-                        {activeUnitQuizForm === module._id && (
+                        {/* Pre-Assessment Form */}
+                        {activePreAssessmentForm === module._id && (
                             <div style={{ padding: '20px', background: '#e5f6fd', borderBottom: '2px solid #e5e5e5' }}>
-                                <h4 style={{ marginBottom: '10px' }}>Manage Unit Skip Quiz</h4>
-                                <form onSubmit={(e) => handleSaveUnitQuiz(e, module._id)}>
-                                    <input className="input-field" placeholder="Question to Skip Unit" value={unitQuizData.question} onChange={e => setUnitQuizData({ ...unitQuizData, question: e.target.value })} required style={{ marginBottom: '8px' }} />
-                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '8px' }}>
-                                        {unitQuizData.options.map((opt, i) => (
-                                            <input key={i} className="input-field" placeholder={`Option ${i + 1}`} value={opt} onChange={e => {
-                                                const newOpts = [...unitQuizData.options];
-                                                newOpts[i] = e.target.value;
-                                                setUnitQuizData({ ...unitQuizData, options: newOpts });
-                                            }} required />
-                                        ))}
-                                    </div>
-                                    <label style={{ fontSize: '0.9rem', fontWeight: 'bold' }}>Correct Answer Index:</label>
-                                    <input
-                                        type="number"
-                                        min="0" max="3"
+                                <h4 style={{ marginBottom: '10px', color: '#1cb0f6' }}>Manage Pre-Assessment Quiz (JSON)</h4>
+                                <p style={{ fontSize: '0.8rem', color: '#666', marginBottom: '8px' }}>
+                                    Paste your quiz questions in JSON format below. Required format: <code>{"{ question, options: [], correctAnswer: 0 }"}</code>
+                                </p>
+                                <form onSubmit={(e) => handleSavePreAssessment(e, module._id)}>
+                                    <textarea
                                         className="input-field"
-                                        style={{ width: '60px', marginLeft: '8px', display: 'inline-block' }}
-                                        value={unitQuizData.correctAnswer}
-                                        onChange={e => setUnitQuizData({ ...unitQuizData, correctAnswer: e.target.value })}
+                                        style={{ height: '300px', fontFamily: 'monospace', fontSize: '0.9rem' }}
+                                        value={preAssessmentJson}
+                                        onChange={e => setPreAssessmentJson(e.target.value)}
                                     />
                                     <br /><br />
-                                    <button className="btn btn-primary" style={{ width: 'auto' }}>SAVE QUIZ</button>
+                                    <button className="btn btn-primary" style={{ width: 'auto', background: '#1cb0f6', borderBottom: '4px solid #1480b3' }}>SAVE PRE-ASSESSMENT</button>
                                 </form>
                             </div>
                         )}
+
+
 
                         <div style={{ padding: '20px' }}>
                             {module.lessons.map((lesson, lIndex) => (

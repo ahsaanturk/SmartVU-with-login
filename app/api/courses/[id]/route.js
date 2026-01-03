@@ -6,6 +6,8 @@ import Module from '@/models/Module';
 import Lesson from '@/models/Lesson';
 
 // Force Cache Refresh
+export const dynamic = 'force-dynamic';
+
 export async function GET(req, { params }) {
     try {
         await dbConnect();

@@ -2,11 +2,13 @@
 'use client';
 
 import { useState, useEffect, use } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
 export default function CourseMapPage({ params }) {
     const unwrapParams = use(params);
     const { courseId } = unwrapParams;
+    const router = useRouter();
 
     const [course, setCourse] = useState(null);
     const [modules, setModules] = useState([]);
@@ -30,18 +32,12 @@ export default function CourseMapPage({ params }) {
         }).catch(err => setLoading(false));
     }, [courseId]);
 
-    const handleTestOut = async (moduleId) => {
-        const passed = confirm("Take the Unit Test to skip ahead? (Simulation: Click OK to Pass)");
-        if (!passed) return;
-
-        const res = await fetch('/api/modules/test-out', {
-            method: 'POST',
-            body: JSON.stringify({ moduleId, courseId, passed: true }),
-            headers: { 'Content-Type': 'application/json' }
-        });
-
-        if (res.ok) {
-            window.location.reload();
+    const handleTestOut = (moduleId, hasPreAssessment) => {
+        if (hasPreAssessment) {
+            router.push(`/learning/${courseId}/module/${moduleId}/pre-assessment`);
+        } else {
+            // Legacy/No-Quiz behavior (Skip simulation or just alert)
+            alert("No pre-assessment available for this module. Watch the lectures to proceed.");
         }
     };
 
@@ -51,9 +47,6 @@ export default function CourseMapPage({ params }) {
     // Helper to check status
     const isLessonCompleted = (id) => progress?.completedLessons?.includes(id);
     const isModuleUnlocked = (id) => progress?.unlockedModules?.includes(id);
-
-    // Calculate Global Lesson Index to determine "current" lesson
-    let globalLessonIndex = 0;
 
     return (
         <div style={{ maxWidth: '600px', margin: '0 auto', padding: '20px', paddingBottom: '100px' }}>
@@ -81,11 +74,6 @@ export default function CourseMapPage({ params }) {
             <div style={{ marginTop: '40px', display: 'flex', flexDirection: 'column', gap: '40px' }}>
                 {modules.map((module, cIndex) => {
                     const moduleUnlocked = isModuleUnlocked(module._id) || cIndex === 0;
-                    // Logic: Module is unlocked if specifically unlocked OR previous module is fully complete (simplified: just check specific unlock or index 0 for now, or check if all lessons of prev module are done)
-
-                    // Improved Logic for "Next Active Lesson" 
-                    // We iterate lessons. If a lesson is NOT complete, it is the "Active" one. All subsequent are "Locked".
-                    // Unless module is explicitly unlocked.
 
                     return (
                         <div key={module._id} className="animate-pop-in" style={{ opacity: moduleUnlocked ? 1 : 0.6 }}>
@@ -96,93 +84,95 @@ export default function CourseMapPage({ params }) {
 
                                 {!moduleUnlocked && (
                                     <button
-                                        onClick={() => handleTestOut(module._id)}
+                                        onClick={() => handleTestOut(module._id, module.preAssessment?.questions?.length > 0)}
                                         style={{ position: 'absolute', right: '16px', top: '50%', transform: 'translateY(-50%)', background: '#fff', color: '#58cc02', border: 'none', padding: '8px 12px', borderRadius: '12px', fontWeight: 'bold', cursor: 'pointer', boxShadow: '0 2px 0 #ddd' }}
                                     >
-                                        Jump Here?
+                                        {module.preAssessment?.questions?.length > 0 ? 'Start Unit' : 'Locked'}
                                     </button>
                                 )}
                             </div>
 
                             {/* Lessons Path */}
                             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '24px' }}>
-                                {module.lessons.map((lesson, lIndex) => {
-                                    const offset = (lIndex % 4 === 1) ? '-40px' : (lIndex % 4 === 3) ? '40px' : '0px';
-                                    const completed = isLessonCompleted(lesson._id);
+                                {
+                                    module.lessons.map((lesson, lIndex) => {
+                                        const offset = (lIndex % 4 === 1) ? '-40px' : (lIndex % 4 === 3) ? '40px' : '0px';
+                                        const completed = isLessonCompleted(lesson._id);
 
-                                    // Determine if Locked
-                                    // It is locked if: Module is locked AND (NOT completed AND previous lesson is NOT completed)
-                                    // Actually, simpler: It is locked if it is NOT completed AND it is NOT the very next one.
-                                    // MVP: Just check completed status. "Active" is the first incomplete one.
+                                        // Determine if Locked
+                                        // It is locked if: Module is locked AND (NOT completed AND previous lesson is NOT completed)
+                                        // Actually, simpler: It is locked if it is NOT completed AND it is NOT the very next one.
+                                        // MVP: Just check completed status. "Active" is the first incomplete one.
 
-                                    // Quick Hack for MVP flow:
-                                    // Unlocked if: (Module Unlocked) OR (Previous Lesson Completed)
-                                    // Color: Gold (Completed), Color (Active), Grey (Locked)
+                                        // Quick Hack for MVP flow:
+                                        // Unlocked if: (Module Unlocked) OR (Previous Lesson Completed)
+                                        // Color: Gold (Completed), Color (Active), Grey (Locked)
 
-                                    let status = 'locked';
-                                    if (completed) status = 'completed';
-                                    else if (moduleUnlocked) status = 'active'; // Need finer grain, but ok for now.
+                                        let status = 'locked';
+                                        if (completed) status = 'completed';
+                                        else if (moduleUnlocked) status = 'active'; // Need finer grain, but ok for now.
 
-                                    // Refined Lock Logic:
-                                    // If not moduleUnlocked -> Locked.
-                                    // If moduleUnlocked:
-                                    //   If completed -> Completed.
-                                    //   If prev is completed (or index 0) -> Active.
-                                    //   Else -> Locked.
+                                        // Refined Lock Logic:
+                                        // If not moduleUnlocked -> Locked.
+                                        // If moduleUnlocked:
+                                        //   If completed -> Completed.
+                                        //   If prev is completed (or index 0) -> Active.
+                                        //   Else -> Locked.
 
-                                    if (!moduleUnlocked) status = 'locked';
-                                    else if (completed) status = 'completed';
-                                    else {
-                                        // Check if it's the first incomplete lesson
-                                        const prevLesson = module.lessons[lIndex - 1];
-                                        if (!prevLesson || isLessonCompleted(prevLesson._id)) {
-                                            status = 'active';
-                                        } else {
-                                            status = 'locked';
+                                        if (!moduleUnlocked) status = 'locked';
+                                        else if (completed) status = 'completed';
+                                        else {
+                                            // Check if it's the first incomplete lesson
+                                            const prevLesson = module.lessons[lIndex - 1];
+                                            if (!prevLesson || isLessonCompleted(prevLesson._id)) {
+                                                status = 'active';
+                                            } else {
+                                                status = 'locked';
+                                            }
                                         }
-                                    }
 
-                                    // Colors
-                                    const bg = status === 'completed' ? '#ffc800' : status === 'active' ? '#58cc02' : '#e5e5e5';
-                                    const shadow = status === 'completed' ? '#e5b400' : status === 'active' ? '#46a302' : '#cfcfcf';
-                                    const starColor = status === 'locked' ? '#afafaf' : 'white';
+                                        // Colors
+                                        const bg = status === 'completed' ? '#ffc800' : status === 'active' ? '#58cc02' : '#e5e5e5';
+                                        const shadow = status === 'completed' ? '#e5b400' : status === 'active' ? '#46a302' : '#cfcfcf';
+                                        const starColor = status === 'locked' ? '#afafaf' : 'white';
 
-                                    return (
-                                        <Link
-                                            key={lesson._id}
-                                            href={status !== 'locked' ? `/learning/${courseId}/lesson/${lesson._id}` : '#'}
-                                            style={{
-                                                textDecoration: 'none',
-                                                display: 'flex',
-                                                flexDirection: 'column',
-                                                alignItems: 'center',
-                                                transform: `translateX(${offset})`,
-                                                pointerEvents: status === 'locked' ? 'none' : 'auto'
-                                            }}
-                                        >
-                                            <div
+                                        return (
+                                            <Link
+                                                key={lesson._id}
+                                                href={status !== 'locked' ? `/learning/${courseId}/lesson/${lesson._id}` : '#'}
                                                 style={{
-                                                    width: '70px',
-                                                    height: '70px',
-                                                    background: bg,
-                                                    borderRadius: '50%',
+                                                    textDecoration: 'none',
                                                     display: 'flex',
+                                                    flexDirection: 'column',
                                                     alignItems: 'center',
-                                                    justifyContent: 'center',
-                                                    boxShadow: `0 6px 0 ${shadow}`,
-                                                    marginBottom: '10px',
-                                                    position: 'relative',
-                                                    transition: '0.2s'
+                                                    transform: `translateX(${offset})`,
+                                                    pointerEvents: status === 'locked' ? 'none' : 'auto'
                                                 }}
-                                                className={status === 'active' ? "hover-bounce" : ""}
                                             >
-                                                <span style={{ fontSize: '2rem', color: starColor }}>★</span>
-                                                {status === 'active' && <div className="pulse-ring"></div>}
-                                            </div>
-                                            <span style={{ color: 'var(--text-muted)', fontWeight: '700', fontSize: '0.9rem' }}>{lesson.title}</span>
-                                        </Link>
-                                    );
-                                })}
+                                                <div
+                                                    style={{
+                                                        width: '70px',
+                                                        height: '70px',
+                                                        background: bg,
+                                                        borderRadius: '50%',
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        justifyContent: 'center',
+                                                        boxShadow: `0 6px 0 ${shadow}`,
+                                                        marginBottom: '10px',
+                                                        position: 'relative',
+                                                        transition: '0.2s'
+                                                    }}
+                                                    className={status === 'active' ? "hover-bounce" : ""}
+                                                >
+                                                    <span style={{ fontSize: '2rem', color: starColor }}>★</span>
+                                                    {status === 'active' && <div className="pulse-ring"></div>}
+                                                </div>
+                                                <span style={{ color: 'var(--text-muted)', fontWeight: '700', fontSize: '0.9rem' }}>{lesson.title}</span>
+                                            </Link>
+                                        );
+                                    })
+                                }
                             </div>
                         </div>
                     );

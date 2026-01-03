@@ -3,9 +3,31 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useEffect, useState } from 'react';
 
 export default function DashboardLayout({ children }) {
     const pathname = usePathname();
+
+    const [verifying, setVerifying] = useState(true);
+
+    // Global Session Verification
+    useEffect(() => {
+        // Simple check to ensure user still exists in DB
+        // This prevents "Zombie Sessions" where cookie is valid but user is deleted
+        fetch('/api/me')
+            .then(res => {
+                if (res.status === 401 || res.status === 404) {
+                    throw new Error('Session invalid');
+                }
+                return res.json();
+            })
+            .then(() => setVerifying(false))
+            .catch(() => {
+                // Force Logout
+                fetch('/api/auth/logout', { method: 'POST' }); // Cleanup cookie
+                window.location.href = '/login'; // Hard redirect
+            });
+    }, []);
 
     const navItems = [
         { name: 'Home', path: '/', icon: '🏠' },
@@ -14,6 +36,22 @@ export default function DashboardLayout({ children }) {
         { name: 'Alerts', path: '/alerts', icon: '🔔' },
         { name: 'Me', path: '/me', icon: '👤' },
     ];
+
+    // Optional: Show loading spinner while verifying? 
+    // For smoother UX, we might skip a full blocker, but for "deleted user" safety, a blocker is better.
+    // Let's keep it non-blocking but with the redirect logic ready, 
+    // OR just block rendering to prevent the "unusual behavior" (flashing, hydration errors).
+    // Given the user report, blocking is safer.
+    if (verifying) {
+        return <div style={{
+            height: '100vh',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            background: '#f7f7f7',
+            color: '#888'
+        }}>Verifying session...</div>;
+    }
 
     return (
         <div className="dashboard-container">

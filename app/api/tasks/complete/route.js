@@ -50,8 +50,8 @@ export async function POST(req) {
             $inc: { xp: xpGained, weeklyXP: xpGained }
         });
 
-        // 4. Update Streak (Simplified)
-        await User.findByIdAndUpdate(userId, { $inc: { streakDays: 1 } }); // Simple streak bump
+        // 4. Update Streak (Removed - functionality moved to Lecture Logic)
+        // await User.findByIdAndUpdate(userId, { $inc: { streakDays: 1 } }); 
 
         return NextResponse.json({ success: true, xpGained });
 

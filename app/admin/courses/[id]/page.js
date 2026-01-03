@@ -24,11 +24,20 @@ export default function CourseEditor({ params }) {
         title: '',
         videoUrl: '',
         summary: '',
+        minWatchTime: 2,
         quizQuestion: '',
         quizOption1: '',
         quizOption2: '',
         quizOption3: '',
         correctOption: 0
+    });
+
+    // Unit Quiz State
+    const [activeUnitQuizForm, setActiveUnitQuizForm] = useState(null); // Module ID
+    const [unitQuizData, setUnitQuizData] = useState({
+        question: '',
+        options: ['', '', '', ''],
+        correctAnswer: 0
     });
 
     useEffect(() => {
@@ -56,7 +65,7 @@ export default function CourseEditor({ params }) {
                 title: moduleTitle,
                 order: modules.length + 1
             }),
-            headers: { 'Content-Type': 'application/json' }
+            headers: { ' Content-Type': 'application/json' }
         });
 
         if (res.ok) {
@@ -84,6 +93,7 @@ export default function CourseEditor({ params }) {
                 title: lessonData.title,
                 videoUrl: lessonData.videoUrl,
                 summary: lessonData.summary,
+                minWatchTime: Number(lessonData.minWatchTime),
                 order: currentLessonCount + 1,
                 quiz: quiz
             }),
@@ -93,12 +103,33 @@ export default function CourseEditor({ params }) {
         if (res.ok) {
             setActiveModuleForm(null);
             setLessonData({
-                title: '', videoUrl: '', summary: '',
+                title: '', videoUrl: '', summary: '', minWatchTime: 2,
                 quizQuestion: '', quizOption1: '', quizOption2: '', quizOption3: '', correctOption: 0
             });
             fetchCourseData();
         } else {
             alert('Failed to create lesson');
+        }
+    };
+
+    const handleSaveUnitQuiz = async (e, moduleId) => {
+        e.preventDefault();
+        const res = await fetch(`/api/admin/modules/${moduleId}/quiz`, {
+            method: 'POST',
+            body: JSON.stringify({
+                questions: [{
+                    question: unitQuizData.question,
+                    options: unitQuizData.options,
+                    correctAnswer: Number(unitQuizData.correctAnswer)
+                }]
+            }),
+            headers: { 'Content-Type': 'application/json' }
+        });
+
+        if (res.ok) {
+            setActiveUnitQuizForm(null);
+            alert('Unit/Pre-Quiz Saved!');
+            fetchCourseData();
         }
     };
 
@@ -141,10 +172,62 @@ export default function CourseEditor({ params }) {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
                 {modules.map((module, index) => (
                     <div key={module._id} className="stat-card" style={{ border: '2px solid #e5e5e5', padding: '0' }}>
-                        <div style={{ padding: '20px', background: '#f7f7f7', borderBottom: '2px solid #e5e5e5', display: 'flex', justifyContent: 'space-between' }}>
-                            <h3 style={{ fontSize: '1.2rem' }}>Unit {index + 1}: {module.title}</h3>
-                            <span style={{ color: 'var(--text-muted)', fontWeight: '700' }}>{module.lessons.length} LESSONS</span>
+                        <div style={{ padding: '20px', background: '#f7f7f7', borderBottom: '2px solid #e5e5e5', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <div>
+                                <h3 style={{ fontSize: '1.2rem' }}>Unit {index + 1}: {module.title}</h3>
+                                <span style={{ color: 'var(--text-muted)', fontWeight: '700' }}>{module.lessons.length} LESSONS</span>
+                            </div>
+                            <button
+                                className="btn btn-outline"
+                                style={{ width: 'auto', fontSize: '0.8rem', padding: '8px 12px' }}
+                                onClick={() => {
+                                    setActiveUnitQuizForm(activeUnitQuizForm === module._id ? null : module._id);
+                                    // Use first question if exists
+                                    if (module.unitQuiz && module.unitQuiz.questions.length > 0) {
+                                        const q = module.unitQuiz.questions[0];
+                                        setUnitQuizData({
+                                            question: q.question,
+                                            options: q.options,
+                                            correctAnswer: q.correctAnswer
+                                        });
+                                    } else {
+                                        setUnitQuizData({ question: '', options: ['', '', '', ''], correctAnswer: 0 });
+                                    }
+                                }}
+                            >
+                                ⚡ PRE-QUIZ
+                            </button>
                         </div>
+
+                        {/* Unit Quiz Form */}
+                        {activeUnitQuizForm === module._id && (
+                            <div style={{ padding: '20px', background: '#e5f6fd', borderBottom: '2px solid #e5e5e5' }}>
+                                <h4 style={{ marginBottom: '10px' }}>Manage Unit Skip Quiz</h4>
+                                <form onSubmit={(e) => handleSaveUnitQuiz(e, module._id)}>
+                                    <input className="input-field" placeholder="Question to Skip Unit" value={unitQuizData.question} onChange={e => setUnitQuizData({ ...unitQuizData, question: e.target.value })} required style={{ marginBottom: '8px' }} />
+                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '8px' }}>
+                                        {unitQuizData.options.map((opt, i) => (
+                                            <input key={i} className="input-field" placeholder={`Option ${i + 1}`} value={opt} onChange={e => {
+                                                const newOpts = [...unitQuizData.options];
+                                                newOpts[i] = e.target.value;
+                                                setUnitQuizData({ ...unitQuizData, options: newOpts });
+                                            }} required />
+                                        ))}
+                                    </div>
+                                    <label style={{ fontSize: '0.9rem', fontWeight: 'bold' }}>Correct Answer Index:</label>
+                                    <input
+                                        type="number"
+                                        min="0" max="3"
+                                        className="input-field"
+                                        style={{ width: '60px', marginLeft: '8px', display: 'inline-block' }}
+                                        value={unitQuizData.correctAnswer}
+                                        onChange={e => setUnitQuizData({ ...unitQuizData, correctAnswer: e.target.value })}
+                                    />
+                                    <br /><br />
+                                    <button className="btn btn-primary" style={{ width: 'auto' }}>SAVE QUIZ</button>
+                                </form>
+                            </div>
+                        )}
 
                         <div style={{ padding: '20px' }}>
                             {module.lessons.map((lesson, lIndex) => (
@@ -154,7 +237,7 @@ export default function CourseEditor({ params }) {
                                     </div>
                                     <div>
                                         <h4 style={{ margin: 0 }}>{lesson.title}</h4>
-                                        <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--text-muted)' }}>Video + Quiz</p>
+                                        <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--text-muted)' }}>{lesson.videoUrl ? 'Video' : 'Text'} • {lesson.minWatchTime || 2}m Watch</p>
                                     </div>
                                 </div>
                             ))}
@@ -168,6 +251,17 @@ export default function CourseEditor({ params }) {
                                                 <input className="input-field" placeholder="Lesson Title" value={lessonData.title} onChange={e => setLessonData({ ...lessonData, title: e.target.value })} required />
                                                 <input className="input-field" placeholder="YouTube URL" value={lessonData.videoUrl} onChange={e => setLessonData({ ...lessonData, videoUrl: e.target.value })} required />
                                                 <textarea className="input-field" placeholder="Lesson Summary" value={lessonData.summary} onChange={e => setLessonData({ ...lessonData, summary: e.target.value })} required />
+
+                                                <div>
+                                                    <label style={{ fontWeight: '700', fontSize: '0.9rem' }}>Minimum Watch Time (Minutes)</label>
+                                                    <input
+                                                        type="number"
+                                                        className="input-field"
+                                                        value={lessonData.minWatchTime}
+                                                        onChange={e => setLessonData({ ...lessonData, minWatchTime: e.target.value })}
+                                                        min="0"
+                                                    />
+                                                </div>
 
                                                 <div style={{ borderTop: '1px solid #eee', paddingTop: '16px' }}>
                                                     <p style={{ fontWeight: '700', marginBottom: '8px' }}>Attach Quiz</p>
@@ -195,7 +289,7 @@ export default function CourseEditor({ params }) {
                                     <button
                                         onClick={() => {
                                             setActiveModuleForm(module._id);
-                                            setLessonData({ title: '', videoUrl: '', summary: '', quizQuestion: '', quizOption1: '', quizOption2: '', quizOption3: '', correctOption: 0 });
+                                            setLessonData({ title: '', videoUrl: '', summary: '', minWatchTime: 2, quizQuestion: '', quizOption1: '', quizOption2: '', quizOption3: '', correctOption: 0 });
                                         }}
                                         style={{ width: '100%', padding: '12px', background: 'none', border: '2px dashed #e5e5e5', borderRadius: '12px', cursor: 'pointer', fontWeight: '700', color: 'var(--text-muted)' }}
                                     >

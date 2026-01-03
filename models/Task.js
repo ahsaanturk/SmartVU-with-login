@@ -1,5 +1,6 @@
 
 import mongoose from 'mongoose';
+// Force Schema Reload
 
 const TaskSchema = new mongoose.Schema({
     courseCode: {
@@ -29,6 +30,11 @@ const TaskSchema = new mongoose.Schema({
         type: String,
         default: 'Admin',
     },
+    quizQuestions: [{
+        question: String,
+        options: [String],
+        correctAnswer: Number
+    }]
 }, { timestamps: true });
 
 export default mongoose.models.Task || mongoose.model('Task', TaskSchema);

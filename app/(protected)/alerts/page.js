@@ -2,11 +2,17 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 
 export default function AlertsPage() {
     const [tasks, setTasks] = useState([]);
     const [filter, setFilter] = useState('Pending');
     const [loading, setLoading] = useState(false);
+    const [expandedTasks, setExpandedTasks] = useState({});
+
+    const toggleExpand = (id) => {
+        setExpandedTasks(prev => ({ ...prev, [id]: !prev[id] }));
+    };
 
     useEffect(() => {
         setLoading(true);
@@ -99,11 +105,18 @@ export default function AlertsPage() {
                                 <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Due: {new Date(task.dueDate).toLocaleDateString()}</p>
                             </div>
 
-                            <div style={{ display: 'flex', gap: '8px' }}>
+                            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                                 {filter === 'Pending' && (
-                                    <button onClick={() => handleCompleteTask(task._id)} className="btn btn-primary" style={{ width: 'auto', background: '#58cc02', boxShadow: '0 4px 0 #46a302' }}>
-                                        MARK DONE
-                                    </button>
+                                    <>
+                                        {task.type === 'Quiz' && (
+                                            <Link href={`/learning/practice/${task._id}`} className="btn btn-primary" style={{ width: 'auto', background: '#1cb0f6', boxShadow: '0 4px 0 #1899d6', textDecoration: 'none' }}>
+                                                PRACTICE
+                                            </Link>
+                                        )}
+                                        <button onClick={() => handleCompleteTask(task._id)} className="btn btn-primary" style={{ width: 'auto', background: '#58cc02', boxShadow: '0 4px 0 #46a302' }}>
+                                            MARK DONE
+                                        </button>
+                                    </>
                                 )}
                                 {filter === 'Missed' && (
                                     <button onClick={() => handleEmailInstructor(task)} className="btn btn-primary" style={{ width: 'auto', background: '#1cb0f6', boxShadow: '0 4px 0 #1899d6' }}>
@@ -113,7 +126,35 @@ export default function AlertsPage() {
                                 {filter === 'Completed' && (
                                     <span style={{ fontSize: '1.5rem' }}>✅</span>
                                 )}
+
+                                {task.description && (
+                                    <button
+                                        onClick={() => toggleExpand(task._id)}
+                                        style={{
+                                            background: '#e5e5e5',
+                                            border: 'none',
+                                            borderRadius: '50%',
+                                            width: '32px',
+                                            height: '32px',
+                                            cursor: 'pointer',
+                                            fontSize: '1.2rem',
+                                            fontWeight: 'bold',
+                                            color: 'var(--text-muted)',
+                                            display: 'flex', alignItems: 'center', justifyContent: 'center'
+                                        }}
+                                        title="View Instructions"
+                                    >
+                                        {expandedTasks[task._id] ? '−' : '+'}
+                                    </button>
+                                )}
                             </div>
+
+                            {expandedTasks[task._id] && (
+                                <div className="animate-pop-in" style={{ marginTop: '16px', padding: '16px', background: '#f7f7f7', borderRadius: '12px', border: '2px dashed #e5e5e5' }}>
+                                    <h4 style={{ fontSize: '0.9rem', color: 'var(--text-muted)', marginBottom: '4px' }}>INSTRUCTIONS</h4>
+                                    <p style={{ lineHeight: '1.5' }}>{task.description}</p>
+                                </div>
+                            )}
                         </div>
                     ))
                 )}

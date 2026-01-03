@@ -45,6 +45,11 @@ export default function MePage() {
                     <h2 style={{ fontSize: '1.5rem', fontWeight: '800' }}>{user.name}</h2>
                     <p style={{ color: 'var(--text-muted)', fontWeight: '700' }}>{user.degree} ({user.degreeLevel}) • Semester {user.semester}</p>
                     <p style={{ color: 'var(--primary)', fontSize: '0.9rem', fontWeight: '600', marginTop: '4px' }}>{user.university}</p>
+                    <div style={{ marginTop: '8px', display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <div style={{ background: '#e5f6fd', color: '#1cb0f6', padding: '4px 8px', borderRadius: '8px', fontWeight: '700', fontSize: '0.9rem' }}>
+                            ⚡ {user.xp || 0} XP
+                        </div>
+                    </div>
                     <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
                         <span style={{ fontSize: '1.2rem' }}>🇵🇰</span>
                         <span style={{ color: 'var(--text-muted)', fontWeight: '600' }}>Joined {joinedDate}</span>

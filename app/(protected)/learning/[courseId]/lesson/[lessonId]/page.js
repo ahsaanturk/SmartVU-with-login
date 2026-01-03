@@ -26,14 +26,32 @@ export default function LessonPage({ params }) {
     const [streakUpdated, setStreakUpdated] = useState(false);
     const [lockout, setLockout] = useState(null); // { remainingSeconds, message }
 
+    // Watch Timer State
+    const [watchTimer, setWatchTimer] = useState(0);
+
     useEffect(() => {
         fetch(`/api/lessons/${lessonId}`)
             .then(res => res.json())
             .then(data => {
-                if (data.lesson) setLesson(data.lesson);
+                if (data.lesson) {
+                    setLesson(data.lesson);
+                    // Initialize timer based on admin setting (default 2 min aka 120s)
+                    const minTime = (data.lesson.minWatchTime || 2) * 60;
+                    setWatchTimer(minTime);
+                }
                 setLoading(false);
             });
     }, [lessonId]);
+
+    // Watch Timer Countdown
+    useEffect(() => {
+        if (watchTimer > 0 && mode === 'learn' && !lockout) {
+            const timer = setInterval(() => {
+                setWatchTimer(prev => prev > 0 ? prev - 1 : 0);
+            }, 1000);
+            return () => clearInterval(timer);
+        }
+    }, [watchTimer, mode, lockout]);
 
     // Cleanup timer on unmount if any
     useEffect(() => {
@@ -183,7 +201,15 @@ export default function LessonPage({ params }) {
                                 <h3 style={{ marginBottom: '12px' }}>Summary</h3>
                                 <p style={{ lineHeight: '1.6' }}>{lesson.summary}</p>
                             </div>
-                            <button className="btn btn-primary" onClick={() => setMode('quiz')}>TAKE QUIZ</button>
+
+                            {/* Watch Timer */}
+                            {!quizCompleted && watchTimer > 0 ? (
+                                <button className="btn btn-outline" disabled style={{ background: '#e5e5e5', color: '#afafaf', borderColor: '#e5e5e5', cursor: 'not-allowed' }}>
+                                    QUIZ UNLOCKS IN {Math.floor(watchTimer / 60)}:{String(watchTimer % 60).padStart(2, '0')}
+                                </button>
+                            ) : (
+                                <button className="btn btn-primary" onClick={() => setMode('quiz')}>TAKE QUIZ</button>
+                            )}
                         </>
                     )}
                 </div>

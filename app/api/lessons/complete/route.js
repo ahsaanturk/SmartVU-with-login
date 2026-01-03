@@ -53,27 +53,39 @@ export async function POST(req) {
         let xpGained = 0;
         let success = false;
 
+        const isReattempt = progress.completedLessons.includes(lessonId);
+
         if (quizCorrect) {
-            xpGained = 60;
             success = true;
+            if (isReattempt) {
+                xpGained = 4; // Repeat Pass
+            } else {
+                xpGained = 60; // First Pass
+            }
 
             // Mark Lesson Complete
             if (!progress.completedLessons.includes(lessonId)) {
                 progress.completedLessons.push(lessonId);
             }
         } else {
-            xpGained = 30; // Consolation XP
+            if (isReattempt) {
+                xpGained = 2; // Repeat Fail
+            } else {
+                xpGained = 15; // First Fail
+            }
+
             // Record Fail
             const currentFails = lessonStat ? lessonStat.failedCount : 0;
             attempts.set(lessonId, {
                 lastAttempt: new Date(),
                 failedCount: currentFails + 1
             });
-            progress.lessonAttempts = attempts; // Mongoose requirement to trigger save
+            progress.lessonAttempts = attempts; // Mongoose requirement
         }
 
         // 5. Update User XP & Streak
         user.xp = (user.xp || 0) + xpGained;
+        user.weeklyXP = (user.weeklyXP || 0) + xpGained;
 
         // Streak Logic
         const today = new Date();

@@ -92,6 +92,14 @@ const UserSchema = new mongoose.Schema({
     xp: {
         type: Number,
         default: 0
+    },
+    weeklyXP: {
+        type: Number,
+        default: 0
+    },
+    lastWeeklyReset: {
+        type: Date,
+        default: Date.now
     }
 }, { timestamps: true });
 

@@ -13,7 +13,11 @@ const LessonSchema = new mongoose.Schema({
     },
     order: {
         type: Number,
-        required: true,
+        default: 0,
+    },
+    minWatchTime: {
+        type: Number,
+        default: 2, // Default 2 minutes
     },
     videoUrl: {
         type: String, // YouTube Link

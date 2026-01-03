@@ -10,7 +10,8 @@ export default function CreateTask() {
         courseCode: '',
         type: 'Quiz',
         dueDate: '',
-        description: ''
+        description: '',
+        quizQuestionsJson: ''
     });
     const [loading, setLoading] = useState(false);
     const [tasks, setTasks] = useState([]);
@@ -44,18 +45,30 @@ export default function CreateTask() {
         setLoading(true);
 
         try {
+            const payload = { ...formData };
+            if (formData.type === 'Quiz' && formData.quizQuestionsJson) {
+                try {
+                    payload.quizQuestions = JSON.parse(formData.quizQuestionsJson);
+                } catch (err) {
+                    alert('Invalid JSON in Quiz Questions');
+                    setLoading(false);
+                    return;
+                }
+            }
+
             const res = await fetch('/api/tasks', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(formData)
+                body: JSON.stringify(payload)
             });
 
             if (res.ok) {
                 alert('Alert/Task Created!');
-                setFormData({ title: '', courseCode: '', type: 'Quiz', dueDate: '', description: '' });
+                setFormData({ title: '', courseCode: '', type: 'Quiz', dueDate: '', description: '', quizQuestionsJson: '' });
                 fetchTasks();
             } else {
-                alert('Failed to create task');
+                const data = await res.json();
+                alert('Failed to create task: ' + (data.error || 'Unknown error'));
             }
         } catch (error) {
             alert('Error');
@@ -146,6 +159,25 @@ export default function CreateTask() {
                                 onChange={e => setFormData({ ...formData, description: e.target.value })}
                             />
                         </div>
+
+                        {formData.type === 'Quiz' && (
+                            <div className="input-group" style={{ background: '#e5f6fd', padding: '16px', borderRadius: '12px', border: '1px solid #1cb0f6' }}>
+                                <label style={{ fontWeight: 'bold', color: '#1cb0f6' }}>Practice Quiz Questions (JSON)</label>
+                                <p style={{ fontSize: '0.8rem', marginBottom: '8px', color: '#555' }}>
+                                    Paste a JSON array of questions. Example:<br />
+                                    <code>
+                                        [{`{ "question": "Q1?", "options": ["A", "B", "C", "D"], "correctAnswer": 0 }`}]
+                                    </code>
+                                </p>
+                                <textarea
+                                    className="input-field"
+                                    placeholder="Paste JSON here..."
+                                    style={{ fontFamily: 'monospace', minHeight: '150px' }}
+                                    value={formData.quizQuestionsJson}
+                                    onChange={e => setFormData({ ...formData, quizQuestionsJson: e.target.value })}
+                                />
+                            </div>
+                        )}
 
                         <button type="submit" className="btn btn-primary" disabled={loading}>
                             {loading ? 'POSTING...' : 'POST ALERT'}

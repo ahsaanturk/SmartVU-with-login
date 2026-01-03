@@ -9,10 +9,13 @@ export default function DashboardHome() {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        fetch('/api/dashboard/home')
-            .then(res => res.json())
-            .then(setData)
-            .finally(() => setLoading(false));
+        Promise.all([
+            fetch('/api/dashboard/home').then(res => res.json()),
+            fetch('/api/leaderboard').then(res => res.json())
+        ]).then(([dashboardData, leaderboardData]) => {
+            setData({ ...dashboardData, weeklyLeaders: leaderboardData.weekly.slice(0, 3) });
+            setLoading(false);
+        });
     }, []);
 
     if (loading) return <div className="page-container">Loading...</div>;
@@ -26,11 +29,19 @@ export default function DashboardHome() {
         <div>
             {/* Header / Stats */}
             <div style={{ display: 'flex', gap: '20px', marginBottom: '32px', flexWrap: 'wrap' }}>
-                <div className="stat-card" style={{ flex: 1, minWidth: '200px', display: 'flex', alignItems: 'center', gap: '16px' }}>
+                <div className="stat-card" style={{ flex: 1, minWidth: '150px', display: 'flex', alignItems: 'center', gap: '16px' }}>
                     <span style={{ fontSize: '2.5rem' }}>🔥</span>
                     <div>
                         <h3 style={{ fontSize: '1.5rem', fontWeight: '800' }}>{data.user?.streak || 0}</h3>
                         <p style={{ color: 'var(--text-muted)', fontWeight: '600' }}>Day Streak</p>
+                    </div>
+                </div>
+
+                <div className="stat-card" style={{ flex: 1, minWidth: '150px', display: 'flex', alignItems: 'center', gap: '16px' }}>
+                    <span style={{ fontSize: '2.5rem' }}>⚡</span>
+                    <div>
+                        <h3 style={{ fontSize: '1.5rem', fontWeight: '800' }}>{data.user?.xp || 0}</h3>
+                        <p style={{ color: 'var(--text-muted)', fontWeight: '600' }}>Total XP</p>
                     </div>
                 </div>
 
@@ -42,7 +53,7 @@ export default function DashboardHome() {
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repea(auto-fit, minmax(300px, 1fr))', gap: '32px' }}>
                 {/* Tasks Section */}
-                <div>
+                <div style={{ flex: 2 }}>
                     <h2 className="title" style={{ textAlign: 'left', marginBottom: '20px' }}>Up Next</h2>
                     {data.tasks.length === 0 ? (
                         <div className="stat-card">
@@ -56,7 +67,6 @@ export default function DashboardHome() {
                             const diffHours = diffMs / (1000 * 60 * 60);
                             const isUrgent = diffHours < 24;
 
-                            // Simple formatting
                             const timeLeft = diffHours > 0
                                 ? `${Math.floor(diffHours)}h ${Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60))}m`
                                 : 'Overdue';
@@ -82,8 +92,12 @@ export default function DashboardHome() {
                                             ⏰ {timeLeft}
                                         </p>
                                     </div>
-                                    <Link href="/learning" className="btn btn-primary" style={{ width: 'auto', padding: '10px 16px', fontSize: '0.9rem' }}>
-                                        PRACTICE
+                                    <Link
+                                        href={task.type === 'Quiz' ? `/learning/practice/${task._id}` : '/learning'}
+                                        className="btn btn-primary"
+                                        style={{ width: 'auto', padding: '10px 16px', fontSize: '0.9rem' }}
+                                    >
+                                        {task.type === 'Quiz' ? 'PRACTICE' : 'VIEW DETAILS'}
                                     </Link>
                                 </div>
                             );
@@ -91,17 +105,31 @@ export default function DashboardHome() {
                     )}
                 </div>
 
-                {/* Sidebar Widgets (Desktop) */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                {/* Sidebar Widgets */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', flex: 1 }}>
                     <div className="stat-card">
-                        <h3 style={{ fontSize: '1.1rem', fontWeight: '800', marginBottom: '12px' }}>Weekly Leaderboard</h3>
-                        {/* Mock Data */}
-                        {[1, 2, 3].map(i => (
-                            <div key={i} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontWeight: '600' }}>
-                                <span>{i}. Student {i}</span>
-                                <span style={{ color: 'var(--primary)' }}>{100 - i * 10} XP</span>
-                            </div>
-                        ))}
+                        <h3 style={{ fontSize: '1.1rem', fontWeight: '800', marginBottom: '12px', color: '#ff9600' }}>🏆 Weekly Top 3</h3>
+                        {data.weeklyLeaders && data.weeklyLeaders.length > 0 ? (
+                            data.weeklyLeaders.map((student, i) => (
+                                <div key={student._id} style={{
+                                    display: 'flex',
+                                    justifyContent: 'space-between',
+                                    marginBottom: '8px',
+                                    fontWeight: '600',
+                                    padding: '8px',
+                                    background: student.name === data.user.name ? '#dfffd6' : 'transparent',
+                                    borderRadius: '8px'
+                                }}>
+                                    <div style={{ display: 'flex', gap: '8px' }}>
+                                        <span style={{ color: 'var(--text-muted)', width: '20px' }}>{i + 1}.</span>
+                                        <span>{student.name}</span>
+                                    </div>
+                                    <span style={{ color: '#1cb0f6' }}>{student.weeklyXP || 0} XP</span>
+                                </div>
+                            ))
+                        ) : (
+                            <p style={{ color: 'var(--text-muted)' }}>No data yet.</p>
+                        )}
                     </div>
 
                     <div className="stat-card" style={{ background: '#ff9600', color: 'white', border: 'none', boxShadow: '0 4px 0 #cc7800' }}>

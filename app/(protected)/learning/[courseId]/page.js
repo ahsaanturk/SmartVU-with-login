@@ -5,6 +5,8 @@ import { useState, useEffect, use } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
+import LoadingScreen from '@/app/components/LoadingScreen';
+
 export default function CourseMapPage({ params }) {
     const unwrapParams = use(params);
     const { courseId } = unwrapParams;
@@ -41,7 +43,7 @@ export default function CourseMapPage({ params }) {
         }
     };
 
-    if (loading) return <div className="page-container">Loading path...</div>;
+    if (loading) return <LoadingScreen />;
     if (!course) return <div className="page-container">Course not found</div>;
 
     // Helper to check status
@@ -122,13 +124,10 @@ export default function CourseMapPage({ params }) {
                                         if (!moduleUnlocked) status = 'locked';
                                         else if (completed) status = 'completed';
                                         else {
-                                            // Check if it's the first incomplete lesson
-                                            const prevLesson = module.lessons[lIndex - 1];
-                                            if (!prevLesson || isLessonCompleted(prevLesson._id)) {
-                                                status = 'active';
-                                            } else {
-                                                status = 'locked';
-                                            }
+                                            // If module is unlocked (via pre-assessment), ALL its lessons should be available (Green/Active).
+                                            // User requested: "unlocked (green)... not watched (yellow)"
+                                            // So we bypass the sequential previous-lesson check for explicitly unlocked modules.
+                                            status = 'active';
                                         }
 
                                         // Colors

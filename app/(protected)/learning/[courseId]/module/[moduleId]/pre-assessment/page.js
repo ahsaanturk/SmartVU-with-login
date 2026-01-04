@@ -170,37 +170,44 @@ export default function PreAssessmentPage({ params }) {
         <div style={{
             minHeight: '100vh',
             background: '#fff',
-            display: 'flex',
-            flexDirection: 'column'
+            position: 'relative',
+            paddingTop: '80px', // Header height + space
+            paddingBottom: '140px' // Footer height + space
         }}>
-            {/* Top Bar with Progress */}
+            {/* Top Bar with Progress - FIXED */}
             <div style={{
-                padding: '40px 20px 20px',
-                maxWidth: '1000px',
-                margin: '0 auto',
+                position: 'fixed',
+                top: 0,
+                left: 0,
                 width: '100%',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '24px'
+                background: 'rgba(255, 255, 255, 0.95)',
+                backdropFilter: 'blur(10px)',
+                zIndex: 100,
+                padding: '20px',
+                borderBottom: '2px solid transparent' // Optional
             }}>
-                <button onClick={() => router.back()} style={{ background: 'none', border: 'none', fontSize: '1.5rem', cursor: 'pointer', color: '#e5e5e5' }}>✕</button>
-                <div style={{ flex: 1, height: '16px', background: '#e5e5e5', borderRadius: '8px', overflow: 'hidden' }}>
-                    <div style={{
-                        width: `${progress}%`,
-                        height: '100%',
-                        background: '#58cc02',
-                        borderRadius: '8px',
-                        transition: 'width 0.3s ease'
-                    }}></div>
+                <div style={{
+                    maxWidth: '1000px',
+                    margin: '0 auto',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '24px'
+                }}>
+                    <button onClick={() => router.back()} style={{ background: 'none', border: 'none', fontSize: '1.5rem', cursor: 'pointer', color: '#e5e5e5' }}>✕</button>
+                    <div style={{ flex: 1, height: '16px', background: '#e5e5e5', borderRadius: '8px', overflow: 'hidden' }}>
+                        <div style={{
+                            width: `${progress}%`,
+                            height: '100%',
+                            background: '#58cc02',
+                            borderRadius: '8px',
+                            transition: 'width 0.3s ease'
+                        }}></div>
+                    </div>
                 </div>
             </div>
 
-            {/* Main Content */}
+            {/* Main Content - SCROLLABLE naturally in body */}
             <div style={{
-                flex: 1,
-                display: 'flex',
-                flexDirection: 'column',
-                justifyContent: 'center',
                 maxWidth: '600px',
                 margin: '0 auto',
                 width: '100%',
@@ -276,11 +283,16 @@ export default function PreAssessmentPage({ params }) {
                 </div>
             </div>
 
-            {/* Footer / Action Button Area */}
+            {/* Footer / Action Button Area - FIXED */}
             <div style={{
+                position: 'fixed',
+                bottom: 0,
+                left: 0,
+                width: '100%',
                 padding: '40px 20px',
                 borderTop: '2px solid #e5e5e5',
-                background: isAnswerChecked ? (selectedOption === currentQ.correctAnswer ? '#d7ffb8' : '#ffdfe0') : 'white'
+                background: isAnswerChecked ? (selectedOption === currentQ.correctAnswer ? '#d7ffb8' : '#ffdfe0') : 'white',
+                zIndex: 100
             }}>
                 <div style={{ maxWidth: '1000px', margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
 
@@ -290,7 +302,8 @@ export default function PreAssessmentPage({ params }) {
                                 width: '60px', height: '60px', borderRadius: '50%',
                                 background: selectedOption === currentQ.correctAnswer ? '#58cc02' : '#ff4b4b',
                                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                color: 'white', fontSize: '2rem'
+                                color: 'white', fontSize: '2rem',
+                                flexShrink: 0
                             }}>
                                 {selectedOption === currentQ.correctAnswer ? '✓' : '✕'}
                             </div>

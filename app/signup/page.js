@@ -108,7 +108,7 @@ export default function SignupPage() {
             });
             const data = await res.json();
             if (res.ok) {
-                router.push('/');
+                router.push('/?welcome=new');
                 router.refresh();
             } else {
                 setError(data.error || 'Registration failed');

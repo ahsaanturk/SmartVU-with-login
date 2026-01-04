@@ -39,7 +39,26 @@ export async function GET(req) {
         const completedStatuses = await UserTaskStatus.find({ userId, status: 'Completed' });
         const completedTaskIds = completedStatuses.map(s => s.taskId.toString());
 
-        const activeTasks = tasks.filter(t => !completedTaskIds.includes(t._id.toString()));
+        const activeTasks = tasks.filter(t => {
+            const isCompleted = completedTaskIds.includes(t._id.toString());
+            const isOverdue = new Date(t.dueDate) < new Date();
+            // We want tasks that are NOT completed AND NOT overdue.
+            // Actually, tasks query already checks `dueDate: { $gte: now }`.
+            // `now` is set to today 00:00:00.
+            // If a task was due yesterday (e.g. 23:59), it is excluded by `$gte: now`.
+            // If a task is due TODAY at 10:00AM, and it is now 11:00AM.
+            // `dueDate` logic in DB usually stores full datetime.
+            // The query `$gte: now` (start of day) includes tasks due today.
+            // We need to filter out tasks that are technically overdue by TIME if we want strict hiding?
+            // "When task/alert become overdue it must disapear".
+            // Let's rely on the DB query for DATE level filtering.
+            // Line 35: `dueDate: { $gte: now }` where now is 00:00:00.
+            // This includes tasks due today.
+            // If the user means "strictly overdue right now", we should use `Date.now()`.
+            // Let's enable strict filtering.
+
+            return !isCompleted && new Date(t.dueDate) > new Date();
+        });
 
         // 2. Fetch Leaderboard (Same Semester, Sorted by XP)
         const leaderboard = await User.find({

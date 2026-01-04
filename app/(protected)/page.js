@@ -3,22 +3,46 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { useSearchParams, useRouter } from 'next/navigation'; // Added headers
+
+import LoadingScreen from '@/app/components/LoadingScreen';
+import WelcomeOverlay from '@/app/components/WelcomeOverlay'; // Import
 
 export default function DashboardHome() {
     const [data, setData] = useState(null);
     const [loading, setLoading] = useState(true);
+    const searchParams = useSearchParams(); // Hook
+    const router = useRouter(); // Hook
+
+    const welcomeMode = searchParams.get('welcome'); // 'new' or 'back' or null
+    const [showWelcome, setShowWelcome] = useState(false);
+
+    useEffect(() => {
+        if (welcomeMode) {
+            setShowWelcome(true);
+        }
+    }, [welcomeMode]);
 
     useEffect(() => {
         Promise.all([
             fetch('/api/dashboard/home', { cache: 'no-store' }).then(res => res.json()),
             fetch('/api/leaderboard', { cache: 'no-store' }).then(res => res.json())
         ]).then(([dashboardData, leaderboardData]) => {
-            setData({ ...dashboardData, weeklyLeaders: leaderboardData.weekly.slice(0, 3) });
+            setData({
+                ...dashboardData,
+                weeklyLeaders: (leaderboardData?.weekly || []).slice(0, 3)
+            });
             setLoading(false);
         });
     }, []);
 
-    if (loading) return <div className="page-container">Loading...</div>;
+    const handleDismissWelcome = () => {
+        setShowWelcome(false);
+        // Clean up URL
+        router.replace('/');
+    };
+
+    if (loading) return <LoadingScreen />;
     if (!data) return <div className="page-container">Error loading data</div>;
     if (data.error) {
         if (typeof window !== 'undefined') window.location.href = '/login';
@@ -29,6 +53,15 @@ export default function DashboardHome() {
 
     return (
         <div>
+            {/* Welcome Overlay */}
+            {showWelcome && (
+                <WelcomeOverlay
+                    mode={welcomeMode}
+                    userName={userData.name?.split(' ')[0]} // First name only for friendlier look
+                    onDismiss={handleDismissWelcome}
+                />
+            )}
+
             {/* Header / Top Bar */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
                 <div>
@@ -71,51 +104,63 @@ export default function DashboardHome() {
                     {data.tasks.length === 0 ? (
                         <div className="stat-card">
                             <p style={{ textAlign: 'center', color: 'var(--text-muted)' }}>No pending tasks! 🎉</p>
+                            <div style={{ textAlign: 'center', marginTop: '16px' }}>
+                                <Link href="/alerts?filter=Missed" style={{ color: '#1cb0f6', textDecoration: 'none', fontWeight: 'bold' }}>
+                                    Check Missed Tasks
+                                </Link>
+                            </div>
                         </div>
                     ) : (
-                        data.tasks.map(task => {
-                            const now = new Date();
-                            const due = new Date(task.dueDate);
-                            const diffMs = due - now;
-                            const diffHours = diffMs / (1000 * 60 * 60);
-                            const isUrgent = diffHours < 24;
+                        <div>
+                            {data.tasks.map(task => {
+                                const now = new Date();
+                                const due = new Date(task.dueDate);
+                                const diffMs = due - now;
+                                const diffHours = diffMs / (1000 * 60 * 60);
+                                const isUrgent = diffHours < 24;
 
-                            const timeLeft = diffHours > 0
-                                ? `${Math.floor(diffHours)}h ${Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60))}m`
-                                : 'Overdue';
+                                const timeLeft = diffHours > 0
+                                    ? `${Math.floor(diffHours)}h ${Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60))}m`
+                                    : 'Overdue';
 
-                            return (
-                                <div key={task._id} className={`task-card ${isUrgent ? 'urgent' : ''}`}>
-                                    <div>
-                                        <div style={{ display: 'flex', gap: '8px', marginBottom: '4px' }}>
-                                            <span style={{
-                                                background: task.type === 'Quiz' ? '#1cb0f6' : '#ff9600',
-                                                color: 'white',
-                                                padding: '2px 8px',
-                                                borderRadius: '6px',
-                                                fontSize: '0.75rem',
-                                                fontWeight: '800'
-                                            }}>
-                                                {task.type}
-                                            </span>
-                                            <span style={{ fontWeight: '800', color: 'var(--text-muted)' }}>{task.courseCode}</span>
+                                return (
+                                    <div key={task._id} className={`task-card ${isUrgent ? 'urgent' : ''}`}>
+                                        <div>
+                                            <div style={{ display: 'flex', gap: '8px', marginBottom: '4px' }}>
+                                                <span style={{
+                                                    background: task.type === 'Quiz' ? '#1cb0f6' : '#ff9600',
+                                                    color: 'white',
+                                                    padding: '2px 8px',
+                                                    borderRadius: '6px',
+                                                    fontSize: '0.75rem',
+                                                    fontWeight: '800'
+                                                }}>
+                                                    {task.type}
+                                                </span>
+                                                <span style={{ fontWeight: '800', color: 'var(--text-muted)' }}>{task.courseCode}</span>
+                                            </div>
+                                            <h4 style={{ fontSize: '1.1rem', fontWeight: '700' }}>{task.title}</h4>
+                                            <p style={{ color: isUrgent ? '#ea2b2b' : 'var(--text-muted)', fontSize: '0.9rem', fontWeight: '600' }}>
+                                                ⏰ {timeLeft}
+                                            </p>
                                         </div>
-                                        <h4 style={{ fontSize: '1.1rem', fontWeight: '700' }}>{task.title}</h4>
-                                        <p style={{ color: isUrgent ? '#ea2b2b' : 'var(--text-muted)', fontSize: '0.9rem', fontWeight: '600' }}>
-                                            ⏰ {timeLeft}
-                                        </p>
+                                        <Link
+                                            href={task.type === 'Quiz' ? `/learning/practice/${task._id}` : '/learning'}
+                                            className="btn btn-primary"
+                                            style={{ width: 'auto', padding: '10px 16px', fontSize: '0.9rem' }}
+                                        >
+                                            {task.type === 'Quiz' ? 'PRACTICE' : 'VIEW DETAILS'}
+                                        </Link>
                                     </div>
-                                    <Link
-                                        href={task.type === 'Quiz' ? `/learning/practice/${task._id}` : '/learning'}
-                                        className="btn btn-primary"
-                                        style={{ width: 'auto', padding: '10px 16px', fontSize: '0.9rem' }}
-                                    >
-                                        {task.type === 'Quiz' ? 'PRACTICE' : 'VIEW DETAILS'}
-                                    </Link>
-                                </div>
-                            );
-                        })
+                                );
+                            })}
+                        </div>
                     )}
+                    <div style={{ textAlign: 'center', marginTop: '20px' }}>
+                        <Link href="/alerts?filter=Missed" style={{ color: '#afafaf', fontSize: '0.9rem', textDecoration: 'none', fontWeight: 'bold' }}>
+                            View Missed Tasks
+                        </Link>
+                    </div>
                 </div>
 
                 {/* Sidebar Widgets */}

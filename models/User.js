@@ -107,6 +107,9 @@ const UserSchema = new mongoose.Schema({
     lastWeeklyReset: {
         type: Date,
         default: Date.now
+    },
+    lastPromotionDate: {
+        type: Date
     }
 }, { timestamps: true });
 

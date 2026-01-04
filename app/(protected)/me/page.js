@@ -4,10 +4,13 @@
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
+import LoadingScreen from '@/app/components/LoadingScreen';
+
 export default function MePage() {
     const router = useRouter();
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [showSettings, setShowSettings] = useState(false);
 
     useEffect(() => {
         fetch('/api/me')
@@ -28,7 +31,7 @@ export default function MePage() {
         }
     };
 
-    if (loading) return <div className="page-container">Loading...</div>;
+    if (loading) return <LoadingScreen />;
     if (!user) return <div className="page-container">Error loading profile</div>;
 
     const joinedDate = new Date(user.createdAt).toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
@@ -147,59 +150,122 @@ export default function MePage() {
                         </div>
 
                         <div style={{ marginTop: 'auto' }}>
+                            {/* Buttons Moved to Settings Section */}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* Settings Section */}
+            <div style={{ marginTop: '32px', marginBottom: '24px' }}>
+                <button
+                    onClick={() => setShowSettings(!showSettings)}
+                    className="btn"
+                    style={{
+                        background: '#f0f0f0',
+                        color: '#333',
+                        width: '100%',
+                        fontWeight: '800',
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        padding: '16px 24px',
+                        border: '2px solid #e5e5e5',
+                        boxShadow: '0 4px 0 #d5d5d5'
+                    }}>
+                    <span>⚙️ SETTINGS</span>
+                    <span>{showSettings ? '▲' : '▼'}</span>
+                </button>
+
+                {showSettings && (
+                    <div className="animate-pop-in" style={{ marginTop: '16px', background: 'white', border: '2px solid #e5e5e5', borderRadius: '16px', padding: '24px', boxShadow: '0 4px 0 #e5e5e5' }}>
+                        <h3 style={{ fontSize: '1.1rem', fontWeight: '800', marginBottom: '16px' }}>Academic Actions</h3>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                            <button
+                                onClick={async () => {
+                                    if (!confirm('Are you sure you want to promote to the next semester? This will update your profile.')) return;
+                                    try {
+                                        const res = await fetch('/api/users/promote', { method: 'POST' });
+                                        const data = await res.json();
+                                        if (res.ok) {
+                                            alert(data.message);
+                                            setUser(prev => ({ ...prev, semester: data.semester }));
+                                            router.refresh();
+                                        } else {
+                                            alert(data.error);
+                                        }
+                                    } catch (e) {
+                                        alert('Promotion failed. Please try again.');
+                                    }
+                                }}
+                                className="btn"
+                                style={{
+                                    width: '100%',
+                                    background: '#f8f9fa',
+                                    border: '1px solid #dee2e6',
+                                    color: '#58cc02',
+                                    fontWeight: '600',
+                                    fontSize: '0.9rem',
+                                    boxShadow: 'none'
+                                }}
+                            >
+                                Promoted to next semester ({user.semester + 1}) ⬆️
+                            </button>
                             <button
                                 onClick={() => router.push('/me/course-selection')}
                                 className="btn"
                                 style={{
                                     width: '100%',
-                                    background: '#FFC800',
-                                    boxShadow: '0 4px 0 #D9AA00',
-                                    color: 'black',
-                                    fontWeight: '700'
+                                    background: '#f8f9fa',
+                                    border: '1px solid #dee2e6',
+                                    color: '#333',
+                                    fontWeight: '600',
+                                    boxShadow: 'none'
                                 }}
                             >
-                                UPDATE COURSES 📚
+                                Course selection 📚
                             </button>
                         </div>
+
+                        <div style={{ marginTop: '24px', paddingTop: '24px', borderTop: '2px solid #e5e5e5' }}>
+                            <h3 style={{ fontSize: '1.1rem', fontWeight: '800', marginBottom: '16px' }}>Preferences</h3>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0px' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 0' }}>
+                                    <div>
+                                        <div style={{ fontWeight: '700' }}>Email Notifications</div>
+                                        <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Get reminders</div>
+                                    </div>
+                                    <button
+                                        onClick={handleToggleNotifications}
+                                        className={`btn ${user.emailNotifications ? 'btn-primary' : ''}`}
+                                        style={{
+                                            width: 'auto',
+                                            padding: '8px 16px',
+                                            fontSize: '0.9rem',
+                                            background: user.emailNotifications ? undefined : '#e5e5e5',
+                                            color: user.emailNotifications ? undefined : '#afafaf',
+                                            boxShadow: user.emailNotifications ? undefined : 'none'
+                                        }}
+                                    >
+                                        {user.emailNotifications ? 'ON' : 'OFF'}
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                </div>
+                )}
             </div>
 
-            {/* Settings */}
-            <div className="stat-card" style={{ marginTop: '24px' }}>
-                <h3 style={{ fontSize: '1.2rem', fontWeight: '800', marginBottom: '20px', color: '#333' }}>Preferences</h3>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0px' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 0', borderBottom: '1px solid #e5e5e5' }}>
-                        <div>
-                            <div style={{ fontWeight: '700' }}>Email Notifications</div>
-                            <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Get reminders about assignments & quiz deadlines</div>
-                        </div>
-                        <button
-                            onClick={handleToggleNotifications}
-                            className={`btn ${user.emailNotifications ? 'btn-primary' : ''}`}
-                            style={{
-                                width: 'auto',
-                                padding: '8px 16px',
-                                fontSize: '0.9rem',
-                                background: user.emailNotifications ? undefined : '#e5e5e5',
-                                color: user.emailNotifications ? undefined : '#afafaf',
-                                boxShadow: user.emailNotifications ? undefined : 'none'
-                            }}
-                        >
-                            {user.emailNotifications ? 'ON' : 'OFF'}
-                        </button>
-                    </div>
-                    <div style={{ padding: '24px 0 8px 0' }}>
-                        <button onClick={handleLogout} className="btn" style={{ background: 'transparent', border: '2px solid #e5e5e5', color: '#afafaf', fontWeight: '700' }}>
-                            SIGN OUT OF ACCOUNT
-                        </button>
-                    </div>
-                </div>
+            {/* Logout Button */}
+            <div style={{ textAlign: 'center', marginBottom: '32px' }}>
+                <button onClick={handleLogout} className="btn" style={{ background: 'transparent', border: '2px solid #e5e5e5', color: '#afafaf', fontWeight: '700', padding: '12px 24px' }}>
+                    SIGN OUT OF ACCOUNT
+                </button>
             </div>
 
             <div style={{ textAlign: 'center', marginTop: '32px', color: 'var(--text-muted)', fontSize: '0.9rem' }}>
                 SmartVU Student Portal • v1.0.0
             </div>
-        </div>
+        </div >
     );
 }

@@ -53,18 +53,27 @@ export async function GET(req) {
             const allTasks = await Task.find(courseQuery).sort({ dueDate: 1 });
             // ...
             return NextResponse.json({ tasks: pendingTasks });
-        } else if (statusFilter === 'All') {
-            // Changing logic: If Admin OR if request specifically asks for All (and we trust the user context?)
-            // Actually, if a Student asks for All, they should only see THEIR courses.
+        } else if (statusFilter === 'Missed') {
+            // Missed = Due Date Passed AND Not Completed
+            const now = new Date();
+            const overdueTasks = await Task.find({
+                ...courseQuery,
+                dueDate: { $lt: now }
+            }).sort({ dueDate: -1 });
 
+            // Filter out completed ones
+            const completedStatuses = await UserTaskStatus.find({ userId, status: 'Completed' });
+            const completedTaskIds = completedStatuses.map(s => s.taskId.toString());
+
+            const missedTasks = overdueTasks.filter(t => !completedTaskIds.includes(t._id.toString()));
+            return NextResponse.json({ tasks: missedTasks });
+        }
+        else if (statusFilter === 'All') {
+            // ... (keep existing All logic, but it was simplified in the view)
             if (isAdmin) {
                 const allTasks = await Task.find({}).sort({ createdAt: -1 });
-                console.log(`[API Debug] Admin fetching ALL. Count: ${allTasks.length}`);
                 return NextResponse.json({ tasks: allTasks });
             } else {
-                // Verify student behavior for 'All'? 
-                // For now, let's unlock it for testing if it's the issue.
-                console.log('[API Debug] Student trying to fetch All - returning empty for now');
                 return NextResponse.json({ tasks: [] });
             }
         }

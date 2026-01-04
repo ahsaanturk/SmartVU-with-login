@@ -4,23 +4,55 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 
+import { useSearchParams } from 'next/navigation';
+
+import LoadingScreen from '@/app/components/LoadingScreen';
+
 export default function AlertsPage() {
+    const searchParams = useSearchParams();
+    // Default to 'Pending', but if URL has filter, use that immediately.
+    // This avoids the double-fetch race condition.
+    const initialFilter = searchParams.get('filter') && ['Pending', 'Missed', 'Completed'].includes(searchParams.get('filter'))
+        ? searchParams.get('filter')
+        : 'Pending';
+
     const [tasks, setTasks] = useState([]);
-    const [filter, setFilter] = useState('Pending');
+    const [filter, setFilter] = useState(initialFilter);
     const [loading, setLoading] = useState(false);
     const [expandedTasks, setExpandedTasks] = useState({});
+
+    // Sync state if URL param changes (e.g. back button)
+    useEffect(() => {
+        const param = searchParams.get('filter');
+        if (param && ['Pending', 'Missed', 'Completed'].includes(param)) {
+            setFilter(param);
+        }
+    }, [searchParams]);
+
+    useEffect(() => {
+        let ignore = false;
+        setLoading(true);
+
+        fetch(`/api/tasks?status=${filter}`)
+            .then(res => res.json())
+            .then(data => {
+                if (!ignore) {
+                    setTasks(data.tasks || []);
+                }
+            })
+            .catch(() => {
+                if (!ignore) setTasks([]);
+            })
+            .finally(() => {
+                if (!ignore) setLoading(false);
+            });
+
+        return () => { ignore = true; };
+    }, [filter]);
 
     const toggleExpand = (id) => {
         setExpandedTasks(prev => ({ ...prev, [id]: !prev[id] }));
     };
-
-    useEffect(() => {
-        setLoading(true);
-        fetch(`/api/tasks?status=${filter}`)
-            .then(res => res.json())
-            .then(data => setTasks(data.tasks || []))
-            .finally(() => setLoading(false));
-    }, [filter]);
 
     const handleEmailInstructor = async (task) => {
         const message = prompt('Draft your email to the instructor:', `Dear Instructor,\n\nI missed the deadline for ${task.title} due to...`);
@@ -58,6 +90,8 @@ export default function AlertsPage() {
         }
     };
 
+    if (loading) return <LoadingScreen />;
+
     return (
         <div>
             <h1 className="title" style={{ textAlign: 'left', marginBottom: '32px' }}>Alerts & Tasks</h1>
@@ -85,7 +119,7 @@ export default function AlertsPage() {
             </div>
 
             <div className="animate-pop-in">
-                {loading ? <p>Loading...</p> : tasks.length === 0 ? <p style={{ color: 'var(--text-muted)' }}>No tasks found.</p> : (
+                {tasks.length === 0 ? <p style={{ color: 'var(--text-muted)' }}>No tasks found.</p> : (
                     tasks.map(task => (
                         <div key={task._id} className="task-card">
                             <div>

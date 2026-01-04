@@ -52,15 +52,6 @@ export async function POST(req, { params }) {
         // So M2 is unlocked. And M1 is unlocked.
         moduleIdsToUnlock.push(targetModule._id);
 
-        // 3. Find ALL lessons in previous modules to mark as complete
-        // Import Lesson dynamically
-        const Lesson = (await import('@/models/Lesson')).default;
-        const previousLessons = await Lesson.find({
-            moduleId: { $in: previousModules.map(m => m._id) }
-        }).select('_id');
-
-        const lessonIdsToComplete = previousLessons.map(l => l._id);
-
         // 4. Update CourseProgress
         let progress = await CourseProgress.findOne({ userId, courseId });
         const User = (await import('@/models/User')).default; // Import User model
@@ -81,12 +72,8 @@ export async function POST(req, { params }) {
         ]);
         progress.unlockedModules = Array.from(newUnlockedSet);
 
-        // Add to completedLessons using Set
-        const newCompletedSet = new Set([
-            ...progress.completedLessons.map(id => id.toString()),
-            ...lessonIdsToComplete.map(id => id.toString())
-        ]);
-        progress.completedLessons = Array.from(newCompletedSet);
+        // REMOVED: Do not auto-complete lessons. User wants them "unlocked" (green), not "watched" (yellow).
+        // The frontend will handle displaying them as unlocked/active.
 
         await progress.save();
 

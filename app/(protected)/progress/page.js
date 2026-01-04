@@ -3,6 +3,8 @@
 
 import { useState, useEffect } from 'react';
 
+import LoadingScreen from '@/app/components/LoadingScreen';
+
 export default function ProgressPage() {
     const [leaderboard, setLeaderboard] = useState({ weekly: [], semester: [] });
     const [userData, setUserData] = useState(null);
@@ -22,7 +24,7 @@ export default function ProgressPage() {
             });
     }, []);
 
-    if (loading) return <div className="page-container">Loading...</div>;
+    if (loading) return <LoadingScreen />;
 
     const list = activeTab === 'weekly' ? leaderboard.weekly : leaderboard.semester;
 

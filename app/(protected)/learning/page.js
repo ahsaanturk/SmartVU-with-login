@@ -4,6 +4,8 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 
+import LoadingScreen from '@/app/components/LoadingScreen';
+
 export default function LearningPage() {
     const [courses, setCourses] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -44,7 +46,7 @@ export default function LearningPage() {
             .finally(() => setFetchingMulti(false));
     }, [activeTab]);
 
-    if (loading) return <div className="page-container">Loading...</div>;
+    if (loading) return <LoadingScreen />;
 
     return (
         <div style={{ maxWidth: '800px', margin: '0 auto' }}>

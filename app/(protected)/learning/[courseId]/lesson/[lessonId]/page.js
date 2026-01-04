@@ -25,6 +25,7 @@ export default function LessonPage({ params }) {
     const [xpGained, setXpGained] = useState(0);
     const [streakUpdated, setStreakUpdated] = useState(false);
     const [lockout, setLockout] = useState(null); // { remainingSeconds, message }
+    const [nextLessonId, setNextLessonId] = useState(null);
 
     // Watch Timer State
     const [watchTimer, setWatchTimer] = useState(0);
@@ -142,6 +143,9 @@ export default function LessonPage({ params }) {
             if (data.success || data.xpGained) {
                 setXpGained(data.xpGained);
                 setStreakUpdated(data.streakUpdated);
+                if (data.nextLessonId) {
+                    setNextLessonId(data.nextLessonId);
+                }
                 setQuizCompleted(true);
             }
 
@@ -329,8 +333,18 @@ export default function LessonPage({ params }) {
                             </div>
 
                             <div style={{ display: 'flex', gap: '16px', justifyContent: 'center', marginTop: '32px' }}>
-                                <Link href={`/learning/${courseId}`} className="btn btn-primary" style={{ width: 'auto' }}>
-                                    CONTINUE TO MAP
+                                {nextLessonId ? (
+                                    <Link href={`/learning/${courseId}/lesson/${nextLessonId}`} className="btn btn-primary" style={{ width: 'auto' }}>
+                                        NEXT LESSON
+                                    </Link>
+                                ) : (
+                                    <div style={{ padding: '10px', color: '#888', fontStyle: 'italic' }}>
+                                        Course Complete!
+                                    </div>
+                                )}
+
+                                <Link href={`/learning/${courseId}`} className="btn btn-outline" style={{ width: 'auto', border: '2px solid #e5e5e5', color: '#afafaf', background: 'white' }}>
+                                    GO TO MAP
                                 </Link>
                             </div>
                         </>

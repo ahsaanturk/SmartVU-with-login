@@ -17,6 +17,7 @@ export default function CourseEditor({ params }) {
     // Forms
     const [showModuleForm, setShowModuleForm] = useState(false);
     const [moduleTitle, setModuleTitle] = useState('');
+    const [editingModuleId, setEditingModuleId] = useState(null); // ID of module being edited
 
     // Lesson Form State (Active Module ID to show form for)
     const [activeModuleForm, setActiveModuleForm] = useState(null);
@@ -31,6 +32,7 @@ export default function CourseEditor({ params }) {
         quizOption3: '',
         correctOption: 0
     });
+    const [editingLessonId, setEditingLessonId] = useState(null); // ID of lesson being edited
 
 
 
@@ -73,6 +75,36 @@ export default function CourseEditor({ params }) {
         }
     };
 
+    const handleUpdateModule = async (e) => {
+        e.preventDefault();
+        const res = await fetch(`/api/modules/${editingModuleId}`, {
+            method: 'PUT',
+            body: JSON.stringify({
+                title: moduleTitle
+            }),
+            headers: { 'Content-Type': 'application/json' }
+        });
+
+        if (res.ok) {
+            setModuleTitle('');
+            setEditingModuleId(null);
+            setShowModuleForm(false);
+            fetchCourseData();
+        }
+    };
+
+    const handleDeleteModule = async (moduleId) => {
+        if (!confirm('Are you sure you want to delete this module? ALL associated lessons will also be deleted.')) return;
+
+        const res = await fetch(`/api/modules/${moduleId}`, {
+            method: 'DELETE'
+        });
+
+        if (res.ok) {
+            fetchCourseData();
+        }
+    };
+
     const handleCreateLesson = async (e, moduleId, currentLessonCount) => {
         e.preventDefault();
         // Construct Quiz Object
@@ -99,16 +131,96 @@ export default function CourseEditor({ params }) {
         });
 
         if (res.ok) {
-            setActiveModuleForm(null);
-            setLessonData({
-                title: '', videoUrl: '', summary: '', minWatchTime: 2,
-                quizQuestion: '', quizOption1: '', quizOption2: '', quizOption3: '', correctOption: 0
-            });
+            resetLessonForm();
             fetchCourseData();
         } else {
             alert('Failed to create lesson');
         }
     };
+
+    const handleUpdateLesson = async (e) => {
+        e.preventDefault();
+        // Construct Quiz Object (same as create)
+        const quiz = {
+            questions: [{
+                question: lessonData.quizQuestion,
+                options: [lessonData.quizOption1, lessonData.quizOption2, lessonData.quizOption3],
+                correctAnswer: Number(lessonData.correctOption)
+            }]
+        };
+
+        const res = await fetch(`/api/lessons/${editingLessonId}`, {
+            method: 'PUT',
+            body: JSON.stringify({
+                title: lessonData.title,
+                videoUrl: lessonData.videoUrl,
+                summary: lessonData.summary,
+                minWatchTime: Number(lessonData.minWatchTime),
+                quiz: quiz
+            }),
+            headers: { 'Content-Type': 'application/json' }
+        });
+
+        if (res.ok) {
+            resetLessonForm();
+            fetchCourseData();
+        } else {
+            alert('Failed to update lesson');
+        }
+    };
+
+    const handleDeleteLesson = async (lessonId) => {
+        if (!confirm('Are you sure you want to delete this lesson?')) return;
+
+        const res = await fetch(`/api/lessons/${lessonId}`, {
+            method: 'DELETE'
+        });
+
+        if (res.ok) {
+            fetchCourseData();
+        }
+    };
+
+    const resetLessonForm = () => {
+        setActiveModuleForm(null);
+        setEditingLessonId(null);
+        setLessonData({
+            title: '', videoUrl: '', summary: '', minWatchTime: 2,
+            quizQuestion: '', quizOption1: '', quizOption2: '', quizOption3: '', correctOption: 0
+        });
+    };
+
+    const startEditingLesson = (lesson, moduleId) => {
+        setActiveModuleForm(moduleId);
+        setEditingLessonId(lesson._id);
+
+        // Extract quiz data if available
+        let qQuestion = '', qOpt1 = '', qOpt2 = '', qOpt3 = '', qCorrect = 0;
+        if (lesson.quiz && lesson.quiz.questions && lesson.quiz.questions.length > 0) {
+            const q = lesson.quiz.questions[0];
+            qQuestion = q.question;
+            qOpt1 = q.options[0] || '';
+            qOpt2 = q.options[1] || '';
+            qOpt3 = q.options[2] || '';
+            qCorrect = q.correctAnswer;
+        }
+
+        setLessonData({
+            title: lesson.title,
+            videoUrl: lesson.videoUrl,
+            summary: lesson.summary,
+            minWatchTime: lesson.minWatchTime,
+            quizQuestion: qQuestion,
+            quizOption1: qOpt1,
+            quizOption2: qOpt2,
+            quizOption3: qOpt3,
+            correctOption: qCorrect
+        });
+    };
+
+
+
+
 
 
 
@@ -164,14 +276,18 @@ export default function CourseEditor({ params }) {
 
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
                 <h2 style={{ fontSize: '1.5rem' }}>Curriculum</h2>
-                <button className="btn btn-primary" style={{ width: 'auto' }} onClick={() => setShowModuleForm(!showModuleForm)}>
+                <button className="btn btn-primary" style={{ width: 'auto' }} onClick={() => {
+                    setEditingModuleId(null);
+                    setModuleTitle('');
+                    setShowModuleForm(!showModuleForm);
+                }}>
                     + ADD MODULE
                 </button>
             </div>
 
             {showModuleForm && (
                 <div className="stat-card" style={{ marginBottom: '32px', border: '2px solid #e5e5e5' }}>
-                    <form onSubmit={handleCreateModule} style={{ display: 'flex', gap: '16px' }}>
+                    <form onSubmit={editingModuleId ? handleUpdateModule : handleCreateModule} style={{ display: 'flex', gap: '16px' }}>
                         <input
                             className="input-field"
                             placeholder="Module Title (e.g. Basics of OOP)"
@@ -191,6 +307,22 @@ export default function CourseEditor({ params }) {
                             <div>
                                 <h3 style={{ fontSize: '1.2rem' }}>Unit {index + 1}: {module.title}</h3>
                                 <span style={{ color: 'var(--text-muted)', fontWeight: '700' }}>{module.lessons.length} LESSONS</span>
+                                <div style={{ display: 'inline-flex', gap: '8px', marginLeft: '16px' }}>
+                                    <button
+                                        onClick={() => {
+                                            setEditingModuleId(module._id);
+                                            setModuleTitle(module.title);
+                                            setShowModuleForm(true);
+                                        }}
+                                        style={{ fontSize: '0.8rem', color: '#1cb0f6', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 'bold' }}>
+                                        EDIT
+                                    </button>
+                                    <button
+                                        onClick={() => handleDeleteModule(module._id)}
+                                        style={{ fontSize: '0.8rem', color: '#ff4b4b', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 'bold' }}>
+                                        DELETE
+                                    </button>
+                                </div>
                             </div>
                             {index !== 0 && (
                                 <button
@@ -256,14 +388,26 @@ export default function CourseEditor({ params }) {
                                         <h4 style={{ margin: 0 }}>{lesson.title}</h4>
                                         <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--text-muted)' }}>{lesson.videoUrl ? 'Video' : 'Text'} • {lesson.minWatchTime || 2}m Watch</p>
                                     </div>
+                                    <div style={{ marginLeft: 'auto', display: 'flex', gap: '8px' }}>
+                                        <button
+                                            onClick={() => startEditingLesson(lesson, module._id)}
+                                            style={{ fontSize: '0.8rem', color: '#1cb0f6', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 'bold' }}>
+                                            EDIT
+                                        </button>
+                                        <button
+                                            onClick={() => handleDeleteLesson(lesson._id)}
+                                            style={{ fontSize: '0.8rem', color: '#ff4b4b', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 'bold' }}>
+                                            DELETE
+                                        </button>
+                                    </div>
                                 </div>
                             ))}
 
                             <div style={{ marginTop: '20px' }}>
                                 {activeModuleForm === module._id ? (
                                     <div style={{ background: '#fff', border: '2px solid #e5e5e5', padding: '20px', borderRadius: '12px' }}>
-                                        <h4 style={{ marginBottom: '16px' }}>New Lesson</h4>
-                                        <form onSubmit={(e) => handleCreateLesson(e, module._id, module.lessons.length)}>
+                                        <h4 style={{ marginBottom: '16px' }}>{editingLessonId ? 'Edit Lesson' : 'New Lesson'}</h4>
+                                        <form onSubmit={(e) => editingLessonId ? handleUpdateLesson(e) : handleCreateLesson(e, module._id, module.lessons.length)}>
                                             <div style={{ display: 'grid', gap: '16px' }}>
                                                 <input className="input-field" placeholder="Lesson Title" value={lessonData.title} onChange={e => setLessonData({ ...lessonData, title: e.target.value })} required />
                                                 <input className="input-field" placeholder="YouTube URL" value={lessonData.videoUrl} onChange={e => setLessonData({ ...lessonData, videoUrl: e.target.value })} required />
@@ -296,8 +440,8 @@ export default function CourseEditor({ params }) {
                                                 </div>
 
                                                 <div style={{ display: 'flex', gap: '10px' }}>
-                                                    <button type="submit" className="btn btn-primary">SAVE LESSON</button>
-                                                    <button type="button" className="btn btn-outline" onClick={() => setActiveModuleForm(null)} style={{ background: '#f7f7f7', color: 'black' }}>CANCEL</button>
+                                                    <button type="submit" className="btn btn-primary">{editingLessonId ? 'UPDATE LESSON' : 'SAVE LESSON'}</button>
+                                                    <button type="button" className="btn btn-outline" onClick={resetLessonForm} style={{ background: '#f7f7f7', color: 'black' }}>CANCEL</button>
                                                 </div>
                                             </div>
                                         </form>
@@ -305,8 +449,8 @@ export default function CourseEditor({ params }) {
                                 ) : (
                                     <button
                                         onClick={() => {
+                                            resetLessonForm();
                                             setActiveModuleForm(module._id);
-                                            setLessonData({ title: '', videoUrl: '', summary: '', minWatchTime: 2, quizQuestion: '', quizOption1: '', quizOption2: '', quizOption3: '', correctOption: 0 });
                                         }}
                                         style={{ width: '100%', padding: '12px', background: 'none', border: '2px dashed #e5e5e5', borderRadius: '12px', cursor: 'pointer', fontWeight: '700', color: 'var(--text-muted)' }}
                                     >

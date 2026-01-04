@@ -143,13 +143,49 @@ export async function POST(req) {
         await user.save();
         await progress.save();
 
+        // 6. Find Next Lesson Logic
+        const currentLesson = await (await import('@/models/Lesson')).default.findById(lessonId);
+        const currentModule = await (await import('@/models/Module')).default.findById(currentLesson.moduleId);
+
+        let nextLessonId = null;
+
+        if (currentLesson && currentModule) {
+            // Check for next lesson in same module
+            const nextLessonInModule = await (await import('@/models/Lesson')).default.findOne({
+                moduleId: currentModule._id,
+                order: currentLesson.order + 1
+            }).select('_id');
+
+            if (nextLessonInModule) {
+                nextLessonId = nextLessonInModule._id;
+            } else {
+                // Check for first lesson of next module
+                const nextModule = await (await import('@/models/Module')).default.findOne({
+                    courseId: courseId,
+                    order: currentModule.order + 1
+                }).select('_id');
+
+                if (nextModule) {
+                    const firstLessonOfNextModule = await (await import('@/models/Lesson')).default.findOne({
+                        moduleId: nextModule._id,
+                        order: 1 // Assuming 1-based order
+                    }).select('_id');
+
+                    if (firstLessonOfNextModule) {
+                        nextLessonId = firstLessonOfNextModule._id;
+                    }
+                }
+            }
+        }
+
         return NextResponse.json({
             success,
             xpGained,
             totalXp: user.xp,
             streakUpdated,
             newStreak: user.streakDays,
-            lessonId
+            lessonId,
+            nextLessonId
         });
 
     } catch (error) {

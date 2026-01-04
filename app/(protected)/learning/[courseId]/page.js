@@ -87,7 +87,7 @@ export default function CourseMapPage({ params }) {
                                         onClick={() => handleTestOut(module._id, module.preAssessment?.questions?.length > 0)}
                                         style={{ position: 'absolute', right: '16px', top: '50%', transform: 'translateY(-50%)', background: '#fff', color: '#58cc02', border: 'none', padding: '8px 12px', borderRadius: '12px', fontWeight: 'bold', cursor: 'pointer', boxShadow: '0 2px 0 #ddd' }}
                                     >
-                                        {module.preAssessment?.questions?.length > 0 ? 'Start Unit' : 'Locked'}
+                                        {module.preAssessment?.questions?.length > 0 ? 'JUMP HERE' : 'Locked'}
                                     </button>
                                 )}
                             </div>

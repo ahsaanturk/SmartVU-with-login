@@ -68,11 +68,41 @@ export default function LessonPage({ params }) {
         return () => clearInterval(interval);
     }, [lockout]);
 
+    // Focus Management: Blur iframe when clicking outside to help dismiss controls/focus
+    useEffect(() => {
+        const handleOutsideTap = () => {
+            if (document.activeElement && document.activeElement.tagName === 'IFRAME') {
+                document.activeElement.blur();
+                window.focus();
+            }
+        };
+
+        window.addEventListener('click', handleOutsideTap);
+        window.addEventListener('touchstart', handleOutsideTap);
+        return () => {
+            window.removeEventListener('click', handleOutsideTap);
+            window.removeEventListener('touchstart', handleOutsideTap);
+        };
+    }, []);
+
     const getYoutubeId = (url) => {
         if (!url) return '';
         const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
         const match = url.match(regExp);
         return (match && match[2].length === 11) ? match[2] : null;
+    };
+
+    const parseCustomMarkdown = (text) => {
+        if (!text) return '';
+        let html = text
+            // Escape HTML (basic) logic could go here if we were stricter, but for Admin entered content trust is okay for MVP
+            // Bold AND Large: **text**
+            .replace(/\*\*(.*?)\*\*/g, '<strong style="font-size: 1.2em; color: #000;">$1</strong>')
+            // Bold: *text*
+            .replace(/\*(.*?)\*/g, '<strong>$1</strong>')
+            // Newlines to <br>
+            .replace(/\n/g, '<br />');
+        return html;
     };
 
     const handleOptionSelect = (idx) => {
@@ -188,54 +218,93 @@ export default function LessonPage({ params }) {
                         </div>
                     ) : (
                         <>
-                            <h1 className="title" style={{ fontSize: '1.5rem', marginBottom: '20px' }}>{lesson.title}</h1>
+                            {lesson.type !== 'Text' && (
+                                <>
+                                    <h1 className="title" style={{ fontSize: '1.5rem', marginBottom: '20px' }}>{lesson.title}</h1>
+                                    <div className="video-wrapper">
+                                        {videoId && (
+                                            <iframe
+                                                style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' }}
+                                                src={`https://www.youtube.com/embed/${videoId}?autoplay=1&playsinline=1&rel=0&modestbranding=1`}
+                                                title="YouTube video player"
+                                                frameBorder="0"
+                                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                                allowFullScreen
+                                            ></iframe>
+                                        )}
+                                    </div>
+                                    <style jsx>{`
+                                        .video-wrapper {
+                                            position: relative;
+                                            padding-bottom: 56.25%;
+                                            height: 0;
+                                            overflow: hidden;
+                                            border-radius: 16px;
+                                            margin-bottom: 24px;
+                                            background: black;
+                                        }
 
-                            <div className="video-wrapper">
-                                {videoId && (
-                                    <iframe
-                                        style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' }}
-                                        src={`https://www.youtube.com/embed/${videoId}?autoplay=1`}
-                                        title="YouTube video player"
-                                        frameBorder="0"
-                                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                                        allowFullScreen
-                                    ></iframe>
+                                        @media (max-width: 768px) {
+                                            .video-wrapper {
+                                                width: 100vw;
+                                                position: relative;
+                                                left: 50%;
+                                                right: 50%;
+                                                margin-left: -50vw;
+                                                margin-right: -50vw;
+                                                border-radius: 0;
+                                                padding-bottom: 0;
+                                                height: auto;
+                                                aspect-ratio: 16 / 9;
+                                            }
+                                        }
+                                    `}</style>
+                                </>
+                            )}
+
+                            {/* Text Lesson Content (Duolingo Style Card) */}
+                            {lesson.type === 'Text' && (
+                                <div className="stat-card" style={{
+                                    marginBottom: '32px',
+                                    padding: '40px',
+                                    border: '2px solid #e5e5e5',
+                                    borderRadius: '20px',
+                                    boxShadow: '0 4px 0 #e5e5e5'
+                                }}>
+                                    <h1 className="title" style={{ fontSize: '2rem', marginBottom: '24px', textAlign: 'center' }}>{lesson.title}</h1>
+                                    <div
+                                        className="lesson-text-content"
+                                        style={{ fontSize: '1.2rem', lineHeight: '1.8', color: '#4b4b4b' }}
+                                        dangerouslySetInnerHTML={{ __html: parseCustomMarkdown(lesson.textContent || '') }}
+                                    ></div>
+                                </div>
+                            )}
+
+                            {/* Summary Section (For Video Lessons mostly, or supplementary for Text) */}
+                            {lesson.type !== 'Text' && (
+                                <div className="stat-card" style={{ marginBottom: '32px' }}>
+                                    <h3 style={{ marginBottom: '12px' }}>Summary</h3>
+                                    <p style={{ lineHeight: '1.6' }} dangerouslySetInnerHTML={{ __html: parseCustomMarkdown(lesson.summary) }}></p>
+                                </div>
+                            )}
+
+                            {/* Sticky Action Bar for Mobile/Desktop Uniformity */}
+                            <div className="mobile-sticky-spacer"></div>
+                            <div className="mobile-sticky-bottom">
+                                {!quizCompleted && watchTimer > 0 ? (
+                                    <div style={{ width: '100%', maxWidth: '600px' }}>
+                                        <button className="btn btn-outline" disabled style={{ background: '#e5e5e5', color: '#afafaf', borderColor: '#e5e5e5', cursor: 'not-allowed', width: '100%' }}>
+                                            QUIZ UNLOCKS IN {Math.floor(watchTimer / 60)}:{String(watchTimer % 60).padStart(2, '0')}
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <div style={{ width: '100%', maxWidth: '600px' }}>
+                                        <button className="btn btn-primary" onClick={() => setMode('quiz')}>
+                                            {lesson.type === 'Text' ? 'CONTINUE' : 'TAKE QUIZ'}
+                                        </button>
+                                    </div>
                                 )}
                             </div>
-
-                            <style jsx>{`
-                                .video-wrapper {
-                                    position: relative;
-                                    padding-bottom: 56.25%;
-                                    height: 0;
-                                    overflow: hidden;
-                                    border-radius: 16px;
-                                    margin-bottom: 24px;
-                                    background: black;
-                                }
-
-                                @media (max-width: 768px) {
-                                    .video-wrapper {
-                                        margin-left: -20px;
-                                        margin-right: -20px;
-                                        width: calc(100% + 40px);
-                                        border-radius: 0;
-                                    }
-                                }
-                            `}</style>
-                            <div className="stat-card" style={{ marginBottom: '32px' }}>
-                                <h3 style={{ marginBottom: '12px' }}>Summary</h3>
-                                <p style={{ lineHeight: '1.6' }}>{lesson.summary}</p>
-                            </div>
-
-                            {/* Watch Timer */}
-                            {!quizCompleted && watchTimer > 0 ? (
-                                <button className="btn btn-outline" disabled style={{ background: '#e5e5e5', color: '#afafaf', borderColor: '#e5e5e5', cursor: 'not-allowed' }}>
-                                    QUIZ UNLOCKS IN {Math.floor(watchTimer / 60)}:{String(watchTimer % 60).padStart(2, '0')}
-                                </button>
-                            ) : (
-                                <button className="btn btn-primary" onClick={() => setMode('quiz')}>TAKE QUIZ</button>
-                            )}
                         </>
                     )}
                 </div>
@@ -280,7 +349,8 @@ export default function LessonPage({ params }) {
                             background: feedback === 'correct' ? '#d7ffb8' : '#ffdfe0',
                             padding: '24px',
                             borderTop: '2px solid rgba(0,0,0,0.1)',
-                            display: 'flex', justifyContent: 'space-between', alignItems: 'center'
+                            display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                            zIndex: 200
                         }}>
                             <div>
                                 <h3 style={{ color: feedback === 'correct' ? '#58cc02' : '#ff4b4b', marginBottom: '4px' }}>
@@ -351,6 +421,6 @@ export default function LessonPage({ params }) {
                     )}
                 </div>
             )}
-        </div>
+        </div >
     );
 }

@@ -121,7 +121,9 @@ export default function CourseEditor({ params }) {
             body: JSON.stringify({
                 moduleId: moduleId,
                 title: lessonData.title,
-                videoUrl: lessonData.videoUrl,
+                type: lessonData.type,
+                videoUrl: lessonData.type === 'Video' ? lessonData.videoUrl : undefined,
+                textContent: lessonData.type === 'Text' ? lessonData.textContent : undefined,
                 summary: lessonData.summary,
                 minWatchTime: Number(lessonData.minWatchTime),
                 order: currentLessonCount + 1,
@@ -153,7 +155,9 @@ export default function CourseEditor({ params }) {
             method: 'PUT',
             body: JSON.stringify({
                 title: lessonData.title,
-                videoUrl: lessonData.videoUrl,
+                type: lessonData.type,
+                videoUrl: lessonData.type === 'Video' ? lessonData.videoUrl : undefined,
+                textContent: lessonData.type === 'Text' ? lessonData.textContent : undefined,
                 summary: lessonData.summary,
                 minWatchTime: Number(lessonData.minWatchTime),
                 quiz: quiz
@@ -185,7 +189,7 @@ export default function CourseEditor({ params }) {
         setActiveModuleForm(null);
         setEditingLessonId(null);
         setLessonData({
-            title: '', videoUrl: '', summary: '', minWatchTime: 2,
+            title: '', type: 'Video', videoUrl: '', textContent: '', summary: '', minWatchTime: 2,
             quizQuestion: '', quizOption1: '', quizOption2: '', quizOption3: '', correctOption: 0
         });
     };
@@ -207,7 +211,9 @@ export default function CourseEditor({ params }) {
 
         setLessonData({
             title: lesson.title,
-            videoUrl: lesson.videoUrl,
+            type: lesson.type || 'Video',
+            videoUrl: lesson.videoUrl || '',
+            textContent: lesson.textContent || '',
             summary: lesson.summary,
             minWatchTime: lesson.minWatchTime,
             quizQuestion: qQuestion,
@@ -410,8 +416,34 @@ export default function CourseEditor({ params }) {
                                         <form onSubmit={(e) => editingLessonId ? handleUpdateLesson(e) : handleCreateLesson(e, module._id, module.lessons.length)}>
                                             <div style={{ display: 'grid', gap: '16px' }}>
                                                 <input className="input-field" placeholder="Lesson Title" value={lessonData.title} onChange={e => setLessonData({ ...lessonData, title: e.target.value })} required />
-                                                <input className="input-field" placeholder="YouTube URL" value={lessonData.videoUrl} onChange={e => setLessonData({ ...lessonData, videoUrl: e.target.value })} required />
-                                                <textarea className="input-field" placeholder="Lesson Summary" value={lessonData.summary} onChange={e => setLessonData({ ...lessonData, summary: e.target.value })} required />
+
+                                                <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
+                                                    <label style={{ fontWeight: 'bold' }}>Lesson Type:</label>
+                                                    <select
+                                                        className="input-field"
+                                                        style={{ width: 'auto' }}
+                                                        value={lessonData.type}
+                                                        onChange={e => setLessonData({ ...lessonData, type: e.target.value })}
+                                                    >
+                                                        <option value="Video">Video</option>
+                                                        <option value="Text">Text</option>
+                                                    </select>
+                                                </div>
+
+                                                {lessonData.type === 'Video' ? (
+                                                    <input className="input-field" placeholder="YouTube URL" value={lessonData.videoUrl} onChange={e => setLessonData({ ...lessonData, videoUrl: e.target.value })} required />
+                                                ) : (
+                                                    <textarea
+                                                        className="input-field"
+                                                        placeholder="Main Text Content (HTML supported)"
+                                                        style={{ height: '200px', fontFamily: 'monospace' }}
+                                                        value={lessonData.textContent}
+                                                        onChange={e => setLessonData({ ...lessonData, textContent: e.target.value })}
+                                                        required
+                                                    />
+                                                )}
+
+                                                <textarea className="input-field" placeholder="Lesson Summary (Use *bold* or **Heading**)" value={lessonData.summary} onChange={e => setLessonData({ ...lessonData, summary: e.target.value })} required />
 
                                                 <div>
                                                     <label style={{ fontWeight: '700', fontSize: '0.9rem' }}>Minimum Watch Time (Minutes)</label>

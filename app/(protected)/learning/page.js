@@ -52,8 +52,17 @@ export default function LearningPage() {
         <div style={{ maxWidth: '800px', margin: '0 auto' }}>
             <h1 className="title" style={{ textAlign: 'left', marginBottom: '32px' }}>Learning Center</h1>
 
-            {/* Tabs */}
-            <div style={{ display: 'flex', gap: '12px', marginBottom: '32px', borderBottom: '2px solid #e5e5e5' }}>
+            {/* Tabs (Mobile Scrollable) */}
+            <div className="no-scrollbar" style={{
+                display: 'flex',
+                gap: '12px',
+                marginBottom: '32px',
+                borderBottom: '2px solid #e5e5e5',
+                overflowX: 'auto',
+                whiteSpace: 'nowrap',
+                paddingRight: '20px', // End padding
+                marginRight: '-20px', // Bleed effect
+            }}>
                 {['courses', 'practice', 'library'].map(tab => (
                     <button
                         key={tab}
@@ -68,7 +77,8 @@ export default function LearningPage() {
                             color: activeTab === tab ? '#1cb0f6' : 'var(--text-muted)',
                             cursor: 'pointer',
                             marginBottom: '-2px',
-                            textTransform: 'uppercase'
+                            textTransform: 'uppercase',
+                            flexShrink: 0 // Prevent squishing
                         }}
                     >
                         {tab}

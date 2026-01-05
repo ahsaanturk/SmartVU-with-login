@@ -9,8 +9,16 @@ export async function POST(req) {
         const body = await req.json();
 
         // Validate
-        if (!body.moduleId || !body.title || !body.videoUrl || !body.summary) {
-            return NextResponse.json({ error: 'Missing fields' }, { status: 400 });
+        if (!body.moduleId || !body.title || !body.summary) {
+            return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+        }
+
+        if (body.type === 'Text' && !body.textContent) {
+            return NextResponse.json({ error: 'Text content is required for Text lessons' }, { status: 400 });
+        }
+
+        if ((!body.type || body.type === 'Video') && !body.videoUrl) {
+            return NextResponse.json({ error: 'Video URL is required' }, { status: 400 });
         }
 
         const lesson = await Lesson.create(body);

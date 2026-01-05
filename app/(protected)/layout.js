@@ -187,6 +187,8 @@ export default function DashboardLayout({ children }) {
                         margin-left: 0 !important;
                         padding-bottom: 90px !important; /* Space for bottom nav */
                         padding-top: 20px !important;
+                        padding-left: 16px !important;
+                        padding-right: 16px !important;
                         width: 100%;
                         overflow-x: hidden; /* NO horizontal scroll */
                     }

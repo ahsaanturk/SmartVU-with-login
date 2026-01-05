@@ -19,9 +19,17 @@ const LessonSchema = new mongoose.Schema({
         type: Number,
         default: 2, // Default 2 minutes
     },
+    type: {
+        type: String,
+        enum: ['Video', 'Text'],
+        default: 'Video',
+    },
     videoUrl: {
         type: String, // YouTube Link
-        required: true,
+        // required: true, // Now optional based on type
+    },
+    textContent: {
+        type: String, // For Text lessons
     },
     summary: {
         type: String, // Text summary

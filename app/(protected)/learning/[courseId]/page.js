@@ -80,19 +80,59 @@ export default function CourseMapPage({ params }) {
                     return (
                         <div key={module._id} className="animate-pop-in" style={{ opacity: moduleUnlocked ? 1 : 0.6 }}>
                             {/* Module Header */}
-                            <div style={{ background: moduleUnlocked ? '#58cc02' : '#e5e5e5', color: moduleUnlocked ? 'white' : '#afafaf', padding: '16px', borderRadius: '16px', marginBottom: '24px', textAlign: 'center', boxShadow: `0 4px 0 ${moduleUnlocked ? '#46a302' : '#cfcfcf'}`, position: 'relative' }}>
-                                <h3 style={{ fontSize: '1.2rem', fontWeight: '800' }}>Unit {cIndex + 1}</h3>
-                                <p>{module.title}</p>
+                            <div className="module-header" style={{
+                                background: moduleUnlocked ? '#58cc02' : '#e5e5e5',
+                                color: moduleUnlocked ? 'white' : '#afafaf',
+                                padding: '16px',
+                                borderRadius: '16px',
+                                marginBottom: '24px',
+                                textAlign: 'center',
+                                boxShadow: `0 4px 0 ${moduleUnlocked ? '#46a302' : '#cfcfcf'}`,
+                                position: 'relative',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'space-between'
+                            }}>
+                                <div style={{ textAlign: 'left' }}>
+                                    <h3 style={{ fontSize: '1.2rem', fontWeight: '800' }}>Unit {cIndex + 1}</h3>
+                                    <p style={{ margin: 0 }}>{module.title}</p>
+                                </div>
 
                                 {!moduleUnlocked && (
                                     <button
+                                        className="jump-button"
                                         onClick={() => handleTestOut(module._id, module.preAssessment?.questions?.length > 0)}
-                                        style={{ position: 'absolute', right: '16px', top: '50%', transform: 'translateY(-50%)', background: '#fff', color: '#58cc02', border: 'none', padding: '8px 12px', borderRadius: '12px', fontWeight: 'bold', cursor: 'pointer', boxShadow: '0 2px 0 #ddd' }}
                                     >
-                                        {module.preAssessment?.questions?.length > 0 ? 'JUMP HERE' : 'Locked'}
+                                        <span className="jump-text">JUMP HERE</span>
+                                        <span className="jump-icon">🚀</span>
                                     </button>
                                 )}
                             </div>
+                            <style jsx>{`
+                                .jump-button {
+                                    background: #fff;
+                                    color: #58cc02;
+                                    border: none;
+                                    padding: 8px 16px;
+                                    border-radius: 12px;
+                                    font-weight: bold;
+                                    cursor: pointer;
+                                    box-shadow: 0 4px 0 #ddd;
+                                    transition: transform 0.1s;
+                                    white-space: nowrap;
+                                }
+                                .jump-button:active {
+                                    box-shadow: 0 0 0 #ddd;
+                                    transform: translateY(4px);
+                                }
+                                .jump-icon { display: none; }
+                                
+                                @media (max-width: 480px) {
+                                    .jump-text { display: none; }
+                                    .jump-icon { display: inline; font-size: 1.2rem; }
+                                    .jump-button { padding: 8px; }
+                                }
+                            `}</style>
 
                             {/* Lessons Path */}
                             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '24px' }}>
@@ -164,7 +204,35 @@ export default function CourseMapPage({ params }) {
                                                     }}
                                                     className={status === 'active' ? "hover-bounce" : ""}
                                                 >
-                                                    <span style={{ fontSize: '2rem', color: starColor }}>★</span>
+                                                    {/* Dynamic Icon based on Type */}
+                                                    {(() => {
+                                                        const videoIcons = [
+                                                            // Play Button
+                                                            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke={starColor} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>,
+                                                            // Film Strip / Camera
+                                                            <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke={starColor} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18"></rect><line x1="7" y1="2" x2="7" y2="22"></line><line x1="17" y1="2" x2="17" y2="22"></line><line x1="2" y1="12" x2="22" y2="12"></line><line x1="2" y1="7" x2="7" y2="7"></line><line x1="2" y1="17" x2="7" y2="17"></line><line x1="17" y1="17" x2="22" y2="17"></line><line x1="17" y1="7" x2="22" y2="7"></line></svg>,
+                                                            // TV / Screen
+                                                            <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke={starColor} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="7" width="20" height="15" rx="2" ry="2"></rect><polyline points="17 2 12 7 7 2"></polyline></svg>
+                                                        ];
+
+                                                        const textIcons = [
+                                                            // Book (Open)
+                                                            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke={starColor} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>,
+                                                            // Document / Article
+                                                            <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke={starColor} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>,
+                                                            // Bulb (Concept)
+                                                            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke={starColor} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18h6"></path><path d="M10 22h4"></path><path d="M15.09 14c.18-.7.18-1.48 0-2.2-.5-1.9-2.2-3.3-4.1-3.3-1.8 0-3.5 1.3-4 3.1-.2.8-.2 1.6 0 2.3.5 1.7 2.1 2.9 3.9 3.1.5 0 1 .1 1.5.1 1.7-.2 3.2-1.4 3.7-3.1z"></path></svg>,
+                                                            // Feather / Quill
+                                                            <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke={starColor} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M20.24 12.24a6 6 0 0 0-8.49-8.49L5 10.5V19h8.5z"></path><line x1="16" y1="8" x2="2" y2="22"></line><line x1="17.5" y1="15" x2="9" y2="15"></line></svg>
+                                                        ];
+
+                                                        const isText = lesson.type === 'Text';
+                                                        const targetSet = isText ? textIcons : videoIcons;
+
+                                                        // Use lesson index to rotate through the specific set
+                                                        const Icon = targetSet[lIndex % targetSet.length];
+                                                        return Icon;
+                                                    })()}
                                                     {status === 'active' && <div className="pulse-ring"></div>}
                                                 </div>
                                                 <span style={{ color: 'var(--text-muted)', fontWeight: '700', fontSize: '0.9rem' }}>{lesson.title}</span>

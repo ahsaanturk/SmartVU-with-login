@@ -49,9 +49,27 @@ export async function GET(req) {
         const courseQuery = isAdmin ? {} : { courseCode: { $in: userCourses } };
 
         if (statusFilter === 'Pending') {
-            // ...
-            const allTasks = await Task.find(courseQuery).sort({ dueDate: 1 });
-            // ...
+            // Pending = Due Date in Future AND Not Completed
+            // Note: We use $gte: now for future.
+            const now = new Date(); // Includes current time
+            // If we want detailed filtering (time-based), rely on JS filter or strict query.
+            // Dashboard uses $gte: today(00:00).
+            // Let's match Dashboard logic: Show tasks due today or later.
+
+            // To be strictly 'Pending', we usually exclude 'Missed'.
+            // Missed is < now.
+            // So Pending is >= now.
+
+            const futureTasks = await Task.find({
+                ...courseQuery,
+                dueDate: { $gte: now }
+            }).sort({ dueDate: 1 });
+
+            const completedStatuses = await UserTaskStatus.find({ userId, status: 'Completed' });
+            const completedTaskIds = completedStatuses.map(s => s.taskId.toString());
+
+            const pendingTasks = futureTasks.filter(t => !completedTaskIds.includes(t._id.toString()));
+
             return NextResponse.json({ tasks: pendingTasks });
         } else if (statusFilter === 'Missed') {
             // Missed = Due Date Passed AND Not Completed

@@ -96,6 +96,15 @@ const UserSchema = new mongoose.Schema({
     streakHistory: [{
         type: Date // Tracks exact dates of streak activity
     }],
+    dailyXP: [{
+        date: {
+            type: Date
+        },
+        xp: {
+            type: Number,
+            default: 0
+        }
+    }],
     xp: {
         type: Number,
         default: 0

@@ -6,6 +6,8 @@ import CourseProgress from '@/models/CourseProgress';
 import jwt from 'jsonwebtoken';
 import { cookies } from 'next/headers';
 
+import { addXP } from '@/lib/xpService';
+
 export async function POST(req) {
     try {
         await dbConnect();
@@ -84,8 +86,9 @@ export async function POST(req) {
         }
 
         // 5. Update User XP & Streak
-        user.xp = (user.xp || 0) + xpGained;
-        user.weeklyXP = (user.weeklyXP || 0) + xpGained;
+        // XP handled via service below
+        // user.xp = (user.xp || 0) + xpGained;
+        // user.weeklyXP = (user.weeklyXP || 0) + xpGained;
 
         // Streak Logic (Strict: Only on Final Quiz, Once per Day)
         let streakUpdated = false;
@@ -143,6 +146,9 @@ export async function POST(req) {
         await user.save();
         await progress.save();
 
+        // Add XP separatedly to handle daily tracking safely
+        await addXP(userId, xpGained);
+
         // 6. Find Next Lesson Logic
         const currentLesson = await (await import('@/models/Lesson')).default.findById(lessonId);
         const currentModule = await (await import('@/models/Module')).default.findById(currentLesson.moduleId);
@@ -181,7 +187,7 @@ export async function POST(req) {
         return NextResponse.json({
             success,
             xpGained,
-            totalXp: user.xp,
+            totalXp: (user.xp || 0) + xpGained,
             streakUpdated,
             newStreak: user.streakDays,
             lessonId,

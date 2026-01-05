@@ -19,11 +19,36 @@ export async function GET(req) {
 
         // Actually, MongoDB Aggregation is best for sorting.
 
-        // Fetch Top 50 Weekly
-        const weeklyboard = await User.find({})
-            .sort({ weeklyXP: -1 })
-            .limit(50)
-            .select('name weeklyXP avatar');
+        // 1. Calculate Rolling 7-Day Window
+        const sevenDaysAgo = new Date();
+        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6); // Today - 6 days = 7 days window
+        sevenDaysAgo.setUTCHours(0, 0, 0, 0);
+
+        // Fetch Top 50 Weekly using Aggregation
+        const weeklyboard = await User.aggregate([
+            {
+                $addFields: {
+                    weeklyXP: {
+                        $sum: {
+                            $map: {
+                                input: {
+                                    $filter: {
+                                        input: { $ifNull: ["$dailyXP", []] },
+                                        as: "entry",
+                                        cond: { $gte: ["$$entry.date", sevenDaysAgo] }
+                                    }
+                                },
+                                as: "filteredEntry",
+                                in: "$$filteredEntry.xp"
+                            }
+                        }
+                    }
+                }
+            },
+            { $sort: { weeklyXP: -1 } },
+            { $limit: 50 },
+            { $project: { name: 1, weeklyXP: 1, avatar: 1 } }
+        ]);
 
         // Fetch Top 50 Semester (Total)
         const semesterboard = await User.find({})

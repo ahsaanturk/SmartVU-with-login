@@ -7,6 +7,8 @@ import User from '@/models/User';
 import jwt from 'jsonwebtoken';
 import { cookies } from 'next/headers';
 
+import { addXP } from '@/lib/xpService';
+
 export async function POST(req) {
     try {
         const { taskId } = await req.json();
@@ -46,9 +48,7 @@ export async function POST(req) {
         // If it was a Quiz, it should have gone through /api/practice/complete!
         // But if they just mark a regular alert as done, give them small XP.
         const xpGained = 10;
-        await User.findByIdAndUpdate(userId, {
-            $inc: { xp: xpGained, weeklyXP: xpGained }
-        });
+        await addXP(userId, xpGained);
 
         // 4. Update Streak (Removed - functionality moved to Lecture Logic)
         // await User.findByIdAndUpdate(userId, { $inc: { streakDays: 1 } }); 

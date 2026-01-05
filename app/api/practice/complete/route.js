@@ -7,6 +7,8 @@ import User from '@/models/User';
 import jwt from 'jsonwebtoken';
 import { cookies } from 'next/headers';
 
+import { addXP } from '@/lib/xpService';
+
 export async function POST(req) {
     try {
         const { taskId, answers } = await req.json(); // answers: { 0: 1, 1: 0, ... }
@@ -67,7 +69,7 @@ export async function POST(req) {
                 await status.save();
 
                 // Update User XP
-                await User.findByIdAndUpdate(userId, { $inc: { xp: xpGained, weeklyXP: xpGained } }); // Update both
+                await addXP(userId, xpGained);
             } else {
                 // Already completed 
                 // "he is authrouzed to practice as more as he/she whant"

@@ -40,6 +40,11 @@ const CourseSchema = new mongoose.Schema({
         enum: ['active', 'archived'],
         default: 'active',
     },
+    handouts: [{
+        title: { type: String, required: true },
+        link: { type: String, required: true },
+        type: { type: String, default: 'Drive' } // 'Drive', 'PDF', etc.
+    }],
     createdBy: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User',

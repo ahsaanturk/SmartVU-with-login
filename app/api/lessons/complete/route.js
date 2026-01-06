@@ -30,26 +30,12 @@ export async function POST(req) {
             progress = await CourseProgress.create({ userId, courseId });
         }
 
-        // 3. Lockout Logic (Check last attempt)
+        // 3. Lockout Logic REMOVED
         // Access map safely. Mongoose Maps require .get()
         const attempts = progress.lessonAttempts || new Map();
         const lessonStat = attempts.get(lessonId);
 
-        if (lessonStat && !quizCorrect) {
-            const lastAttemptTime = new Date(lessonStat.lastAttempt).getTime();
-            const now = Date.now();
-            const diffMinutes = (now - lastAttemptTime) / 60000;
-
-            // If failed previously and less than 2 minutes have passed
-            if (diffMinutes < 2) {
-                const remainingSeconds = Math.ceil((2 - diffMinutes) * 60);
-                return NextResponse.json({
-                    error: 'Locked',
-                    message: 'You must rewatch the lesson before retrying.',
-                    remainingSeconds
-                }, { status: 429 });
-            }
-        }
+        // Previously checked for < 2 min diff here. Now allowing unlimited retries.
 
         // 4. Update Stats & XP
         let xpGained = 0;

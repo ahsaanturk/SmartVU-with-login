@@ -24,7 +24,7 @@ export default function LessonPage({ params }) {
     // Result State
     const [xpGained, setXpGained] = useState(0);
     const [streakUpdated, setStreakUpdated] = useState(false);
-    const [lockout, setLockout] = useState(null); // { remainingSeconds, message }
+    const [quizSuccess, setQuizSuccess] = useState(false);
     const [nextLessonId, setNextLessonId] = useState(null);
 
     // Watch Timer State
@@ -37,7 +37,11 @@ export default function LessonPage({ params }) {
                 if (data.lesson) {
                     setLesson(data.lesson);
                     // Initialize timer based on admin setting (default 2 min aka 120s)
-                    const minTime = (data.lesson.minWatchTime || 2) * 60;
+                    // If minWatchTime is undefined/null, treat as 0 (Optional/No Wait)
+                    // Previously we defaulted to 2, now we respect 0.
+                    const minTime = (data.lesson.minWatchTime !== undefined && data.lesson.minWatchTime !== null)
+                        ? data.lesson.minWatchTime * 60
+                        : 0;
                     setWatchTimer(minTime);
                 }
                 setLoading(false);
@@ -53,20 +57,6 @@ export default function LessonPage({ params }) {
             return () => clearInterval(timer);
         }
     }, [watchTimer, mode, lockout]);
-
-    // Cleanup timer on unmount if any
-    useEffect(() => {
-        let interval;
-        if (lockout && lockout.remainingSeconds > 0) {
-            interval = setInterval(() => {
-                setLockout(prev => {
-                    if (prev.remainingSeconds <= 1) return null; // Unlock
-                    return { ...prev, remainingSeconds: prev.remainingSeconds - 1 };
-                });
-            }, 1000);
-        }
-        return () => clearInterval(interval);
-    }, [lockout]);
 
     // Focus Management: Blur iframe when clicking outside to help dismiss controls/focus
     useEffect(() => {
@@ -159,25 +149,17 @@ export default function LessonPage({ params }) {
 
             const data = await res.json();
 
-            if (res.status === 429) {
-                // Locked out
-                setLockout({
-                    message: data.message,
-                    remainingSeconds: data.remainingSeconds
-                });
-                setQuizCompleted(true); // Show completion screen with lockout
-                setLoading(false);
-                return;
-            }
-
-            if (data.success || data.xpGained) {
+            if (data.success) {
                 setXpGained(data.xpGained);
                 setStreakUpdated(data.streakUpdated);
                 if (data.nextLessonId) {
                     setNextLessonId(data.nextLessonId);
                 }
-                setQuizCompleted(true);
+                setQuizSuccess(true);
+            } else {
+                setQuizSuccess(false);
             }
+            setQuizCompleted(true);
 
         } catch (err) {
             console.error('Failed to update progress', err);
@@ -367,22 +349,29 @@ export default function LessonPage({ params }) {
 
             {quizCompleted && (
                 <div className="animate-pop-in" style={{ textAlign: 'center', padding: '40px' }}>
-                    {lockout ? (
+                    {!quizSuccess ? (
                         <>
-                            <div style={{ fontSize: '4rem', marginBottom: '20px' }}>🔒</div>
-                            <h2 className="title">Needs Practice</h2>
-                            <p className="subtitle" style={{ marginBottom: '20px' }}>You scored {score}/{lesson.quiz.questions.length}. To master this, you need a perfect score.</p>
-                            <div className="stat-card" style={{ border: '2px solid #e5e5e5', background: '#f9f9f9' }}>
-                                <p style={{ fontWeight: 'bold' }}>XP Earned: +{xpGained}</p>
-                            </div>
-                            <br />
-                            <p style={{ color: '#ff4b4b' }}>You must wait {Math.floor(lockout.remainingSeconds / 60)}m {lockout.remainingSeconds % 60}s before trying again.</p>
+                            <div style={{ fontSize: '4rem', marginBottom: '20px' }}>💔</div>
+                            <h2 className="title" style={{ color: '#ff4b4b' }}>Lesson Failed</h2>
+                            <p className="subtitle" style={{ marginBottom: '20px' }}>You scored {score}/{lesson.quiz.questions.length}. To pass, you need a perfect score.</p>
 
-                            <div style={{ display: 'flex', gap: '16px', justifyContent: 'center', marginTop: '32px' }}>
-                                <button className="btn btn-outline" style={{ width: 'auto' }} onClick={() => {
+                            <p style={{ color: '#666', marginBottom: '32px' }}>Don't worry! Review the material and try again.</p>
+
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', justifyContent: 'center', alignItems: 'center' }}>
+                                <button className="btn btn-primary" style={{ width: '100%', maxWidth: '300px' }} onClick={() => {
                                     setMode('learn');
                                     setQuizCompleted(false);
-                                }}>REWATCH LESSON</button>
+                                    setCurrentQuestionIndex(0);
+                                    setScore(0);
+                                    setFeedback(null);
+                                    setSelectedOption(null);
+                                }}>
+                                    RETAKE LESSON
+                                </button>
+
+                                <Link href={`/learning/${courseId}`} className="btn btn-outline" style={{ width: '100%', maxWidth: '300px', border: '2px solid #e5e5e5', color: '#afafaf', background: 'white' }}>
+                                    GO TO MAP
+                                </Link>
                             </div>
                         </>
                     ) : (

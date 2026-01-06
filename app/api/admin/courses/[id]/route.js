@@ -36,7 +36,7 @@ export async function PUT(req, { params }) {
 
         const { id } = await params;
         const body = await req.json();
-        const { code, name, semester, allowedPrograms, description, creditHours } = body;
+        const { code, name, semester, allowedPrograms, description, creditHours, handouts } = body;
 
         // 2. Validate
         if (!code || !name || !semester || !allowedPrograms || !Array.isArray(allowedPrograms)) {
@@ -52,7 +52,8 @@ export async function PUT(req, { params }) {
                 semester,
                 allowedPrograms,
                 description,
-                creditHours: creditHours || 3
+                creditHours: creditHours || 3,
+                handouts: handouts || [] // Save handouts
             },
             { new: true }
         );

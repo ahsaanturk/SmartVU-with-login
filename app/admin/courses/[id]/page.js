@@ -40,6 +40,11 @@ export default function CourseEditor({ params }) {
     const [activePreAssessmentForm, setActivePreAssessmentForm] = useState(null);
     const [preAssessmentJson, setPreAssessmentJson] = useState('');
 
+    // Handout State
+    const [handouts, setHandouts] = useState([]);
+    const [handoutTitle, setHandoutTitle] = useState('');
+    const [handoutLink, setHandoutLink] = useState('');
+
     useEffect(() => {
         fetchCourseData();
     }, [id]);
@@ -51,6 +56,7 @@ export default function CourseEditor({ params }) {
                 if (data.course) {
                     setCourse(data.course);
                     setModules(data.modules); // Hierarchy
+                    setHandouts(data.course.handouts || []);
                 }
                 setLoading(false);
             });
@@ -250,11 +256,47 @@ export default function CourseEditor({ params }) {
                 setActivePreAssessmentForm(null);
                 alert('Pre-Assessment Saved!');
                 fetchCourseData();
-            } else {
-                alert('Failed to save.');
             }
         } catch (err) {
             alert('Invalid JSON Syntax');
+        }
+    };
+
+    const handleAddHandout = async (e) => {
+        e.preventDefault();
+        const newHandout = { title: handoutTitle, link: handoutLink, type: 'Drive' };
+        const updatedHandouts = [...handouts, newHandout];
+
+        // Optimistic Update
+        setHandouts(updatedHandouts);
+        setHandoutTitle('');
+        setHandoutLink('');
+
+        await saveHandouts(updatedHandouts);
+    };
+
+    const handleDeleteHandout = async (index) => {
+        if (!confirm('Remove this handout?')) return;
+        const updatedHandouts = handouts.filter((_, i) => i !== index);
+        setHandouts(updatedHandouts);
+        await saveHandouts(updatedHandouts);
+    };
+
+    const saveHandouts = async (updatedList) => {
+        // We use the Main Course Update API we just modified
+        try {
+            const res = await fetch(`/api/admin/courses/${id}`, {
+                method: 'PUT',
+                body: JSON.stringify({
+                    ...course, // Keep existing course fields
+                    handouts: updatedList
+                }),
+                headers: { 'Content-Type': 'application/json' }
+            });
+            if (!res.ok) alert('Failed to save handout changes.');
+        } catch (err) {
+            console.error(err);
+            alert('Error saving handouts');
         }
     };
 
@@ -277,6 +319,52 @@ export default function CourseEditor({ params }) {
 
             <h1 className="title">{course.name}</h1>
             <p className="subtitle">{course.code} • {course.degree}</p>
+
+            <hr style={{ margin: '32px 0', border: 'none', borderBottom: '2px solid #e5e5e5' }} />
+
+            {/* HANDOUTS SECTION */}
+            <div style={{ marginBottom: '40px' }}>
+                <h2 style={{ fontSize: '1.5rem', marginBottom: '16px' }}>Handouts & Resources</h2>
+
+                {/* List */}
+                <div style={{ display: 'grid', gap: '8px', marginBottom: '16px' }}>
+                    {handouts.length === 0 && <p style={{ color: 'var(--text-muted)' }}>No handouts added yet.</p>}
+
+                    {handouts.map((h, i) => (
+                        <div key={i} className="stat-card" style={{ padding: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', border: '1px solid #e5e5e5' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                <span style={{ fontSize: '1.5rem' }}>📄</span>
+                                <div>
+                                    <div style={{ fontWeight: '700' }}>{h.title}</div>
+                                    <a href={h.link} target="_blank" rel="noopener noreferrer" style={{ fontSize: '0.8rem', color: '#1cb0f6' }}>{h.link}</a>
+                                </div>
+                            </div>
+                            <button onClick={() => handleDeleteHandout(i)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.2rem' }}>🗑️</button>
+                        </div>
+                    ))}
+                </div>
+
+                {/* Add Form */}
+                <form onSubmit={handleAddHandout} className="stat-card" style={{ background: '#f9f9f9', display: 'flex', gap: '10px', alignItems: 'center' }}>
+                    <input
+                        className="input-field"
+                        placeholder="Handout Title"
+                        value={handoutTitle}
+                        onChange={e => setHandoutTitle(e.target.value)}
+                        required
+                        style={{ flex: 1 }}
+                    />
+                    <input
+                        className="input-field"
+                        placeholder="Drive Link / URL"
+                        value={handoutLink}
+                        onChange={e => setHandoutLink(e.target.value)}
+                        required
+                        style={{ flex: 1 }}
+                    />
+                    <button type="submit" className="btn btn-primary" style={{ width: 'auto', marginBottom: 0 }}>+ ADD</button>
+                </form>
+            </div>
 
             <hr style={{ margin: '32px 0', border: 'none', borderBottom: '2px solid #e5e5e5' }} />
 
@@ -447,6 +535,7 @@ export default function CourseEditor({ params }) {
 
                                                 <div>
                                                     <label style={{ fontWeight: '700', fontSize: '0.9rem' }}>Minimum Watch Time (Minutes)</label>
+                                                    <p style={{ fontSize: '0.8rem', color: '#666', margin: '4px 0' }}>Set to 0 to minimize waiting time.</p>
                                                     <input
                                                         type="number"
                                                         className="input-field"

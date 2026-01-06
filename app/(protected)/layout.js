@@ -4,6 +4,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import SessionVerifier from '@/app/components/SessionVerifier';
 
 export default function DashboardLayout({ children }) {
     const pathname = usePathname();
@@ -43,14 +44,7 @@ export default function DashboardLayout({ children }) {
     // OR just block rendering to prevent the "unusual behavior" (flashing, hydration errors).
     // Given the user report, blocking is safer.
     if (verifying) {
-        return <div style={{
-            height: '100vh',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            background: '#f7f7f7',
-            color: '#888'
-        }}>Verifying session...</div>;
+        return <SessionVerifier />;
     }
 
     return (

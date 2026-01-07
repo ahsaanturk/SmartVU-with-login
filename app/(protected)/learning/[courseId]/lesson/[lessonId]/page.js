@@ -29,6 +29,7 @@ export default function LessonPage({ params }) {
 
     // Watch Timer State
     const [watchTimer, setWatchTimer] = useState(0);
+    const [lockout, setLockout] = useState(null);
 
     useEffect(() => {
         fetch(`/api/lessons/${lessonId}`)

@@ -14,7 +14,7 @@ const UserTaskStatusSchema = new mongoose.Schema({
     },
     status: {
         type: String,
-        enum: ['Pending', 'Completed', 'Missed'],
+        enum: ['Pending', 'Completed', 'Missed', 'Deleted'],
         default: 'Pending',
     },
     completionDate: {

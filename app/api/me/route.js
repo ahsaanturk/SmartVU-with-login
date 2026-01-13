@@ -6,7 +6,7 @@ import CourseProgress from '@/models/CourseProgress';
 import { cookies } from 'next/headers';
 import jwt from 'jsonwebtoken';
 
-export const dynamic = 'force-dynamic';
+
 
 export async function GET() {
     try {

@@ -1,4 +1,3 @@
-
 import { NextResponse } from 'next/server';
 import dbConnect from '@/lib/db';
 import User from '@/models/User';
@@ -7,8 +6,7 @@ import UserTaskStatus from '@/models/UserTaskStatus';
 import Content from '@/models/Content';
 import jwt from 'jsonwebtoken';
 import { cookies } from 'next/headers';
-
-export const dynamic = 'force-dynamic';
+import { getCachedTasks } from '@/lib/cached-data';
 
 export async function GET(req) {
     try {
@@ -30,10 +28,14 @@ export async function GET(req) {
         const now = new Date();
         now.setHours(0, 0, 0, 0); // Include today's tasks
 
-        const tasks = await Task.find({
-            courseCode: { $in: userCourses },
-            dueDate: { $gte: now }
-        }).sort({ dueDate: 1 });
+        // Usage of Cached Data Fetcher
+        // We fetch *all* tasks from cache (fast) and filter in memory.
+        const allTasks = await getCachedTasks();
+
+        const tasks = allTasks.filter(task => {
+            const taskDate = new Date(task.dueDate);
+            return userCourses.includes(task.courseCode) && taskDate >= now;
+        }).sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate));
 
         // Filter out completed ones
         const completedStatuses = await UserTaskStatus.find({ userId, status: 'Completed' });
@@ -41,22 +43,7 @@ export async function GET(req) {
 
         const activeTasks = tasks.filter(t => {
             const isCompleted = completedTaskIds.includes(t._id.toString());
-            const isOverdue = new Date(t.dueDate) < new Date();
             // We want tasks that are NOT completed AND NOT overdue.
-            // Actually, tasks query already checks `dueDate: { $gte: now }`.
-            // `now` is set to today 00:00:00.
-            // If a task was due yesterday (e.g. 23:59), it is excluded by `$gte: now`.
-            // If a task is due TODAY at 10:00AM, and it is now 11:00AM.
-            // `dueDate` logic in DB usually stores full datetime.
-            // The query `$gte: now` (start of day) includes tasks due today.
-            // We need to filter out tasks that are technically overdue by TIME if we want strict hiding?
-            // "When task/alert become overdue it must disapear".
-            // Let's rely on the DB query for DATE level filtering.
-            // Line 35: `dueDate: { $gte: now }` where now is 00:00:00.
-            // This includes tasks due today.
-            // If the user means "strictly overdue right now", we should use `Date.now()`.
-            // Let's enable strict filtering.
-
             return !isCompleted && new Date(t.dueDate) > new Date();
         });
 
@@ -64,11 +51,10 @@ export async function GET(req) {
         const leaderboard = await User.find({
             role: 'student',
             semester: user.semester,
-            // Exclude current user? No, usually you want to see yourself in the list if you are top.
         })
             .sort({ xp: -1 })
             .limit(10)
-            .select('name xp semester degree'); // Lean select
+            .select('name xp semester degree');
 
         // 3. Fetch Quote
         const quote = await Content.findOne({ type: 'Quote' }).sort({ date: -1 });

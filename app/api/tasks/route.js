@@ -9,7 +9,7 @@ import { cookies } from 'next/headers';
 
 import User from '@/models/User';
 
-export const dynamic = 'force-dynamic';
+
 
 export async function GET(req) {
     try {
@@ -65,10 +65,13 @@ export async function GET(req) {
                 dueDate: { $gte: now }
             }).sort({ dueDate: 1 });
 
-            const completedStatuses = await UserTaskStatus.find({ userId, status: 'Completed' });
-            const completedTaskIds = completedStatuses.map(s => s.taskId.toString());
+            const completedStatuses = await UserTaskStatus.find({
+                userId,
+                status: { $in: ['Completed', 'Deleted'] }
+            });
+            const excludedTaskIds = completedStatuses.map(s => s.taskId.toString());
 
-            const pendingTasks = futureTasks.filter(t => !completedTaskIds.includes(t._id.toString()));
+            const pendingTasks = futureTasks.filter(t => !excludedTaskIds.includes(t._id.toString()));
 
             return NextResponse.json({ tasks: pendingTasks });
         } else if (statusFilter === 'Missed') {
@@ -80,10 +83,14 @@ export async function GET(req) {
             }).sort({ dueDate: -1 });
 
             // Filter out completed ones
-            const completedStatuses = await UserTaskStatus.find({ userId, status: 'Completed' });
-            const completedTaskIds = completedStatuses.map(s => s.taskId.toString());
+            // Filter out completed and deleted ones
+            const completedStatuses = await UserTaskStatus.find({
+                userId,
+                status: { $in: ['Completed', 'Deleted'] }
+            });
+            const excludedTaskIds = completedStatuses.map(s => s.taskId.toString());
 
-            const missedTasks = overdueTasks.filter(t => !completedTaskIds.includes(t._id.toString()));
+            const missedTasks = overdueTasks.filter(t => !excludedTaskIds.includes(t._id.toString()));
             return NextResponse.json({ tasks: missedTasks });
         }
         else if (statusFilter === 'All') {

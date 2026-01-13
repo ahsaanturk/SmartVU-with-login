@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
 import LoadingScreen from '@/app/components/LoadingScreen';
+import styles from './me.module.css';
 
 export default function MePage() {
     const router = useRouter();
@@ -55,47 +56,34 @@ export default function MePage() {
         <div style={{ maxWidth: '800px', margin: '0 auto', paddingBottom: '80px' }}>
 
             {/* Header / Hero */}
-            <div style={{
-                background: 'linear-gradient(135deg, #1cb0f6 0%, #178cc0 100%)',
-                borderRadius: '20px',
-                padding: '32px',
-                color: 'white',
-                marginBottom: '32px',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '24px',
-                boxShadow: '0 8px 0 #147bad'
-            }}>
-                <div style={{
-                    width: '100px',
-                    height: '100px',
-                    borderRadius: '50%',
-                    background: 'white',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontSize: '3rem',
-                    border: '4px solid rgba(255,255,255,0.3)'
-                }}>
-                    👤
-                </div>
-                <div style={{ flex: 1 }}>
-                    <h1 style={{ fontSize: '2rem', fontWeight: '800', margin: 0, display: 'flex', items: 'center', gap: '8px' }}>
-                        {user.name}
-                        {user.isVerified && <span title="Verified Student">✅</span>}
-                    </h1>
-                    <p style={{ fontSize: '1.1rem', opacity: 0.9, fontWeight: '600' }}>
-                        {user.email}
-                    </p>
-                    <div style={{ display: 'flex', gap: '16px', marginTop: '16px' }}>
-                        <div style={{ background: 'rgba(255,255,255,0.2)', padding: '4px 12px', borderRadius: '12px', fontWeight: '700' }}>
-                            Member since {joinedDate}
+            {/* Header / Hero */}
+            <div className={styles.header}>
+                <div className={styles.contentWrapper}>
+                    <div className={styles.avatarContainer}>
+                        <div className={styles.avatar}>
+                            👤
+                        </div>
+                        {user.isVerified && (
+                            <div className={styles.verifiedBadge} title="Verified Student">
+                                ✅
+                            </div>
+                        )}
+                    </div>
+
+                    <div className={styles.userInfo}>
+                        <h1 className={styles.name}>{user.name}</h1>
+                        <div className={styles.email}>
+                            ✉️ {user.email}
+                        </div>
+                        <div className={styles.joinDate}>
+                            🎓 {user.degree} • Semester {user.semester}
                         </div>
                     </div>
-                </div>
-                <div style={{ textAlign: 'center' }}>
-                    <div style={{ fontSize: '2.5rem', fontWeight: '800' }}>{user.xp || 0}</div>
-                    <div style={{ fontWeight: '700', opacity: 0.8 }}>TOTAL XP</div>
+
+                    <div className={styles.xpCard}>
+                        <div className={styles.xpValue}>{user.xp || 0}</div>
+                        <div className={styles.xpLabel}>Total XP</div>
+                    </div>
                 </div>
             </div>
 

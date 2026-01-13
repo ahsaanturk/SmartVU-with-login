@@ -5,7 +5,7 @@ import User from '@/models/User';
 import nodemailer from 'nodemailer';
 import { getStreakReminderTemplate } from '@/lib/emailTemplates';
 
-export const dynamic = 'force-dynamic';
+
 
 export async function GET(req) {
     // 1. Security Check (Vercel Cron)

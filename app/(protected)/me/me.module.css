@@ -1,0 +1,289 @@
+/* Global Animations */
+@keyframes slideUp {
+    from {
+        transform: translateY(20px);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+@keyframes float {
+    0% {
+        transform: translateY(0px);
+    }
+
+    50% {
+        transform: translateY(-5px);
+    }
+
+    100% {
+        transform: translateY(0px);
+    }
+}
+
+@keyframes shimmer {
+    0% {
+        background-position: -200% 0;
+    }
+
+    100% {
+        background-position: 200% 0;
+    }
+}
+
+/* Main Header Container */
+.header {
+    background: linear-gradient(120deg, #1cb0f6, #2b70c9, #1cb0f6);
+    background-size: 200% 200%;
+    animation: shimmer 8s linear infinite;
+    border-radius: 24px;
+    padding: 24px;
+    color: white;
+    margin-bottom: 24px;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 10px 40px -10px rgba(28, 176, 246, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Decorative Circles */
+.header::before,
+.header::after {
+    content: '';
+    position: absolute;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.2) 0%, transparent 60%);
+    z-index: 0;
+}
+
+.header::before {
+    width: 300px;
+    height: 300px;
+    top: -100px;
+    left: -100px;
+    opacity: 0.6;
+}
+
+.header::after {
+    width: 200px;
+    height: 200px;
+    bottom: -50px;
+    right: -50px;
+    opacity: 0.4;
+}
+
+.contentWrapper {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    gap: 28px;
+    animation: slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Avatar Section */
+.avatarContainer {
+    position: relative;
+    width: 110px;
+    height: 110px;
+    flex-shrink: 0;
+}
+
+.avatar {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    background: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 3.5rem;
+    border: 4px solid rgba(255, 255, 255, 0.8);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
+}
+
+.verifiedBadge {
+    position: absolute;
+    bottom: 2px;
+    right: 2px;
+    background: white;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    border: 2px solid #1cb0f6;
+}
+
+/* User Info Section */
+.userInfo {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.name {
+    font-size: 2.2rem;
+    font-weight: 800;
+    margin: 0;
+    line-height: 1.1;
+    letter-spacing: -0.5px;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.email {
+    font-size: 1.05rem;
+    font-weight: 600;
+    opacity: 0.9;
+    margin-top: 6px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.joinDate {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(0, 0, 0, 0.15);
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 700;
+    margin-top: 12px;
+    backdrop-filter: blur(4px);
+}
+
+/* XP Card */
+.xpCard {
+    background: rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    padding: 16px 24px;
+    border-radius: 20px;
+    text-align: center;
+    min-width: 120px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    transition: transform 0.2s;
+}
+
+.xpCard:hover {
+    transform: translateY(-2px);
+    background: rgba(255, 255, 255, 0.25);
+}
+
+.xpValue {
+    font-size: 2.2rem;
+    font-weight: 900;
+    line-height: 1;
+    background: linear-gradient(to bottom, #fff, #e0f4ff);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.1));
+}
+
+.xpLabel {
+    font-size: 0.75rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-top: 6px;
+    opacity: 0.9;
+}
+
+/* Mobile Optimizations */
+@media (max-width: 768px) {
+    .header {
+        margin: 0 0 24px 0;
+        /* Align with other cards, no bleed */
+        border-radius: 24px;
+        /* Maintain rounded corners */
+        padding: 24px 20px;
+        /* Comfortable padding */
+        text-align: left;
+        /* Reset text align */
+    }
+
+    .contentWrapper {
+        flex-direction: row;
+        /* Horizontal layout */
+        flex-wrap: wrap;
+        gap: 16px;
+        align-items: center;
+        /* Align centers */
+    }
+
+    .avatarContainer {
+        width: 80px;
+        /* Slightly smaller for mobile */
+        height: 80px;
+        margin: 0;
+        /* Reset margin */
+        animation: none;
+        /* Simplify animation for cleaner look */
+    }
+
+    .avatar {
+        font-size: 2.5rem;
+        border-width: 3px;
+    }
+
+    .verifiedBadge {
+        width: 24px;
+        height: 24px;
+        font-size: 0.9rem;
+    }
+
+    .userInfo {
+        flex: 1;
+        min-width: 140px;
+        /* Prevent crushing */
+        align-items: flex-start;
+        /* Left align text */
+    }
+
+    .name {
+        font-size: 1.5rem;
+        /* Adjusted for mobile row */
+    }
+
+    .email {
+        font-size: 0.9rem;
+    }
+
+    .joinDate {
+        font-size: 0.75rem;
+        padding: 4px 10px;
+        margin-top: 8px;
+    }
+
+    .xpCard {
+        width: 100%;
+        /* Full width bottom bar OR inline if space? */
+        /* Let's make it a compact row item or full width based on user pref.
+           "add things horizontolly" - maybe they want it in the same row?
+           Given space, putting it below is safer for layout, but let's style it horizontally internal.
+        */
+        margin-top: 4px;
+        padding: 12px 16px;
+        flex-direction: row;
+        justify-content: space-between;
+    }
+
+    .xpValue {
+        font-size: 1.5rem;
+    }
+
+    .xpLabel {
+        font-size: 0.7rem;
+        margin: 0;
+    }
+}

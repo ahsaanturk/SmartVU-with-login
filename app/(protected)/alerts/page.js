@@ -1,8 +1,8 @@
-
 'use client';
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import styles from './alerts.module.css';
 
 import { useSearchParams } from 'next/navigation';
 
@@ -11,7 +11,6 @@ import LoadingScreen from '@/app/components/LoadingScreen';
 export default function AlertsPage() {
     const searchParams = useSearchParams();
     // Default to 'Pending', but if URL has filter, use that immediately.
-    // This avoids the double-fetch race condition.
     const initialFilter = searchParams.get('filter') && ['Pending', 'Missed', 'Completed'].includes(searchParams.get('filter'))
         ? searchParams.get('filter')
         : 'Pending';
@@ -21,7 +20,10 @@ export default function AlertsPage() {
     const [loading, setLoading] = useState(false);
     const [expandedTasks, setExpandedTasks] = useState({});
 
-    // Sync state if URL param changes (e.g. back button)
+    // Delete Modal State
+    const [taskToDelete, setTaskToDelete] = useState(null);
+
+    // Sync state if URL param changes
     useEffect(() => {
         const param = searchParams.get('filter');
         if (param && ['Pending', 'Missed', 'Completed'].includes(param)) {
@@ -90,110 +92,139 @@ export default function AlertsPage() {
         }
     };
 
+    const handleDeleteClick = (task) => {
+        setTaskToDelete(task);
+    };
+
+    const confirmDelete = async () => {
+        if (!taskToDelete) return;
+        try {
+            const res = await fetch('/api/tasks/delete', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ taskId: taskToDelete._id })
+            });
+
+            if (res.ok) {
+                setTasks(prev => prev.filter(t => t._id !== taskToDelete._id));
+                setTaskToDelete(null);
+            } else {
+                alert('Failed to delete task');
+            }
+        } catch (e) {
+            alert('Error deleting task');
+        }
+    };
+
     if (loading) return <LoadingScreen />;
 
     return (
-        <div>
-            <h1 className="title" style={{ textAlign: 'left', marginBottom: '32px' }}>Alerts & Tasks</h1>
-
-            <div style={{ display: 'flex', gap: '12px', marginBottom: '32px', borderBottom: '2px solid #e5e5e5' }}>
-                {['Pending', 'Missed', 'Completed'].map(tab => (
-                    <button
-                        key={tab}
-                        onClick={() => setFilter(tab)}
-                        style={{
-                            background: 'none',
-                            border: 'none',
-                            borderBottom: filter === tab ? '4px solid #ea2b2b' : '4px solid transparent',
-                            padding: '12px 24px',
-                            fontSize: '1rem',
-                            fontWeight: '800',
-                            color: filter === tab ? '#ea2b2b' : 'var(--text-muted)',
-                            cursor: 'pointer',
-                            marginBottom: '-2px'
-                        }}
-                    >
-                        {tab.toUpperCase()}
-                    </button>
-                ))}
+        <div className={styles.container}>
+            <div className={styles.header}>
+                <h1 className={styles.title}>Alerts & Tasks</h1>
+                <div className={styles.tabs}>
+                    {['Pending', 'Missed', 'Completed'].map(tab => (
+                        <button
+                            key={tab}
+                            onClick={() => setFilter(tab)}
+                            className={`${styles.tabBtn} ${filter === tab ? styles.tabBtnActive : ''} ${filter === tab ? styles['tabBtnActive' + tab] : ''}`}
+                        >
+                            {tab}
+                        </button>
+                    ))}
+                </div>
             </div>
 
             <div className="animate-pop-in">
-                {tasks.length === 0 ? <p style={{ color: 'var(--text-muted)' }}>No tasks found.</p> : (
-                    tasks.map(task => (
-                        <div key={task._id} className="task-card">
-                            <div>
-                                <div style={{ display: 'flex', gap: '8px', marginBottom: '4px' }}>
-                                    <span style={{
-                                        background: '#e5e5e5',
-                                        color: 'var(--text-muted)',
-                                        padding: '2px 8px',
-                                        borderRadius: '6px',
-                                        fontSize: '0.75rem',
-                                        fontWeight: '800'
-                                    }}>
-                                        {task.courseCode}
-                                    </span>
-                                </div>
-                                <h4 style={{ fontSize: '1.1rem', fontWeight: '700' }}>{task.title}</h4>
-                                <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Due: {new Date(task.dueDate).toLocaleDateString()}</p>
-                            </div>
+                {tasks.length === 0 ? (
+                    <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>
+                        <div style={{ fontSize: '3rem', marginBottom: '16px' }}>🎉</div>
+                        <h3>No {filter.toLowerCase()} tasks!</h3>
+                    </div>
+                ) : (
+                    <div className={styles.taskList}>
+                        {tasks.map(task => (
+                            <div key={task._id} className={styles.taskCard}>
+                                <div className={styles.taskInfo}>
+                                    <span className={styles.courseTag}>{task.courseCode}</span>
+                                    <h4 className={styles.taskTitle}>{task.title}</h4>
+                                    <p className={styles.dueDate}>Due: {new Date(task.dueDate).toLocaleDateString()}</p>
 
-                            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                                {filter === 'Pending' && (
-                                    <>
-                                        {task.type === 'Quiz' && (
-                                            <Link href={`/learning/practice/${task._id}`} className="btn btn-primary" style={{ width: 'auto', background: '#1cb0f6', boxShadow: '0 4px 0 #1899d6', textDecoration: 'none' }}>
-                                                PRACTICE
-                                            </Link>
-                                        )}
-                                        <button onClick={() => handleCompleteTask(task._id)} className="btn btn-primary" style={{ width: 'auto', background: '#58cc02', boxShadow: '0 4px 0 #46a302' }}>
-                                            MARK DONE
-                                        </button>
-                                    </>
-                                )}
-                                {filter === 'Missed' && (
-                                    <button onClick={() => handleEmailInstructor(task)} className="btn btn-primary" style={{ width: 'auto', background: '#1cb0f6', boxShadow: '0 4px 0 #1899d6' }}>
-                                        EMAIL TEACHER
-                                    </button>
-                                )}
-                                {filter === 'Completed' && (
-                                    <span style={{ fontSize: '1.5rem' }}>✅</span>
-                                )}
+                                    {task.description && expandedTasks[task._id] && (
+                                        <div className={`animate-pop-in ${styles.instructions}`}>
+                                            {task.description}
+                                        </div>
+                                    )}
+                                </div>
+
+                                <div className={styles.actions}>
+                                    {filter === 'Pending' && (
+                                        <>
+                                            {task.type === 'Quiz' && (
+                                                <Link href={`/learning/practice/${task._id}`} className={`${styles.miniBtn} ${styles.btnPractice}`}>
+                                                    <span>📝</span> PRACTICE
+                                                </Link>
+                                            )}
+                                            <button onClick={() => handleCompleteTask(task._id)} className={`${styles.miniBtn} ${styles.btnDone}`}>
+                                                <span>✓</span> DONE
+                                            </button>
+                                        </>
+                                    )}
+                                    {filter === 'Missed' && (
+                                        <>
+                                            <button onClick={() => handleEmailInstructor(task)} className={`${styles.miniBtn} ${styles.btnEmail}`}>
+                                                <span>✉️</span> EMAIL
+                                            </button>
+                                            <button onClick={() => handleDeleteClick(task)} className={`${styles.miniBtn} ${styles.btnDelete}`}>
+                                                <span>🗑️</span>
+                                            </button>
+                                        </>
+                                    )}
+                                    {filter === 'Completed' && (
+                                        <>
+                                            <span className={styles.completedIcon}>✅</span>
+                                            <button onClick={() => handleDeleteClick(task)} className={`${styles.miniBtn} ${styles.btnDelete}`} style={{ width: 'auto', padding: '8px' }}>
+                                                <span>🗑️</span>
+                                            </button>
+                                        </>
+                                    )}
+                                </div>
 
                                 {task.description && (
                                     <button
                                         onClick={() => toggleExpand(task._id)}
-                                        style={{
-                                            background: '#e5e5e5',
-                                            border: 'none',
-                                            borderRadius: '50%',
-                                            width: '32px',
-                                            height: '32px',
-                                            cursor: 'pointer',
-                                            fontSize: '1.2rem',
-                                            fontWeight: 'bold',
-                                            color: 'var(--text-muted)',
-                                            display: 'flex', alignItems: 'center', justifyContent: 'center'
-                                        }}
+                                        className={styles.btnExpand}
                                         title="View Instructions"
                                     >
                                         {expandedTasks[task._id] ? '−' : '+'}
                                     </button>
                                 )}
                             </div>
-
-                            {expandedTasks[task._id] && (
-                                <div className="animate-pop-in" style={{ marginTop: '16px', padding: '16px', background: '#f7f7f7', borderRadius: '12px', border: '2px dashed #e5e5e5' }}>
-                                    <h4 style={{ fontSize: '0.9rem', color: 'var(--text-muted)', marginBottom: '4px' }}>INSTRUCTIONS</h4>
-                                    <p style={{ lineHeight: '1.5' }}>{task.description}</p>
-                                </div>
-                            )}
-                        </div>
-                    ))
+                        ))}
+                    </div>
                 )}
             </div>
 
+            {/* Delete Confirmation Modal */}
+            {taskToDelete && (
+                <div className={styles.modalOverlay} onClick={() => setTaskToDelete(null)}>
+                    <div className={styles.modalContent} onClick={e => e.stopPropagation()}>
+                        <div style={{ fontSize: '2.5rem', marginBottom: '16px' }}>🗑️</div>
+                        <h3 className={styles.modalTitle}>Delete this task?</h3>
+                        <p className={styles.modalText}>
+                            Are you sure you want to remove <strong>{taskToDelete.title}</strong>? This action cannot be undone.
+                        </p>
+                        <div className={styles.modalActions}>
+                            <button className={`${styles.btnModal} ${styles.btnCancel}`} onClick={() => setTaskToDelete(null)}>
+                                CANCEL
+                            </button>
+                            <button className={`${styles.btnModal} ${styles.btnConfirm}`} onClick={confirmDelete}>
+                                DELETE
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

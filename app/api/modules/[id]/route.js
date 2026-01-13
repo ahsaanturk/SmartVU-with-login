@@ -4,7 +4,7 @@ import dbConnect from '@/lib/db';
 import Module from '@/models/Module';
 
 
-export const dynamic = 'force-dynamic';
+
 
 export async function GET(req, { params }) {
     const unwrapParams = await params;

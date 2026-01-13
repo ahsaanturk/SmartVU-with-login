@@ -1,3 +1,5 @@
+'use client';
+
 export default function Loading() {
     return (
         <div className="page-container" style={{ display: 'flex', justifyContent: 'center', padding: '50px' }}>

@@ -1,5 +1,13 @@
 
+
+
+
 import { NextResponse } from 'next/server';
+export const dynamic = 'force-dynamic';
+
+
+
+
 import dbConnect from '@/lib/db';
 import Content from '@/models/Content';
 import { cookies } from 'next/headers';

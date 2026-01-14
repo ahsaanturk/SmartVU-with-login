@@ -1,10 +1,10 @@
-
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
-export default function CreateTask() {
+function CreateTaskContent() {
     const [formData, setFormData] = useState({
         title: '',
         courseCode: '',
@@ -17,6 +17,7 @@ export default function CreateTask() {
     const [tasks, setTasks] = useState([]);
     const [availableCourses, setAvailableCourses] = useState([]);
     const [activeTab, setActiveTab] = useState('today'); // 'today' | 'week' | 'all'
+    const [filteredTasks, setFilteredTasks] = useState([]);
 
     useEffect(() => {
         fetchTasks();
@@ -37,22 +38,22 @@ export default function CreateTask() {
             .then(data => setAvailableCourses(data.courses || []));
     };
 
-    // Filter Logic
-    const getFilteredTasks = () => {
+    // Filter Logic - Moved to Effect/Sync to prevent hydration mismatch with new Date()
+    useEffect(() => {
         const now = new Date();
         const startOfToday = new Date(now.setHours(0, 0, 0, 0));
         const oneWeekAgo = new Date(new Date().setDate(new Date().getDate() - 7));
 
+        let filtered = [];
         if (activeTab === 'today') {
-            return tasks.filter(t => new Date(t.createdAt) >= startOfToday);
+            filtered = tasks.filter(t => new Date(t.createdAt) >= startOfToday);
+        } else if (activeTab === 'week') {
+            filtered = tasks.filter(t => new Date(t.createdAt) >= oneWeekAgo);
+        } else {
+            filtered = tasks; // 'all'
         }
-        if (activeTab === 'week') {
-            return tasks.filter(t => new Date(t.createdAt) >= oneWeekAgo);
-        }
-        return tasks; // 'all'
-    };
-
-    const filteredTasks = getFilteredTasks();
+        setFilteredTasks(filtered);
+    }, [tasks, activeTab]);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -258,7 +259,8 @@ export default function CreateTask() {
                 </div>
 
                 <div style={{ display: 'grid', gap: '16px' }}>
-                    {filteredTasks.map(task => (
+                    {filteredTasks.map((task, index) => (
+                        // Hydration safe check: ensure date rendering is stable
                         <div key={task._id} className="stat-card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px' }}>
                             <div>
                                 <div style={{ display: 'flex', gap: '8px', marginBottom: '4px' }}>
@@ -266,7 +268,9 @@ export default function CreateTask() {
                                     <span style={{ background: '#fff4db', color: '#ffa500', padding: '2px 8px', borderRadius: '4px', fontSize: '0.8rem', fontWeight: 'bold' }}>{task.type}</span>
                                 </div>
                                 <div style={{ fontWeight: '700' }}>{task.title}</div>
-                                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Posted: {new Date(task.createdAt).toLocaleDateString()}</div>
+                                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                                    Posted: {new Date(task.createdAt).toLocaleDateString()}
+                                </div>
                             </div>
                             <div style={{ display: 'flex', gap: '8px' }}>
                                 <Link
@@ -290,5 +294,13 @@ export default function CreateTask() {
                 </div>
             </div>
         </div>
+    );
+}
+
+export default function CreateTask() {
+    return (
+        <Suspense fallback={<div className="page-container">Loading...</div>}>
+            <CreateTaskContent />
+        </Suspense>
     );
 }
